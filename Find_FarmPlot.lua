@@ -222,4 +222,4 @@ player.CharacterAdded:Connect(function(newChar)
     notify("🔄 Respawn", "Character baru terdeteksi", 3)
 end)
 
-notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl\nTekan F untuk memulai", 6)
+notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl", 6)
