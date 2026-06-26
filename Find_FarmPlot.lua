@@ -239,6 +239,7 @@ local function performFullSequence()
     task.wait(10)
 
     disableDeepUnderground()
+    task.wait(5)
 
     local plots = findAllFarmPlots()
     if #plots > 0 then
