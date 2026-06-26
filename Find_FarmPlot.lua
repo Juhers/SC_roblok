@@ -259,7 +259,7 @@ local function performFullSequence()
 
     local genPos = getGeneratorPosition()
     if genPos then
-        local backOffset = genPos + Vector3.new(0, 5, 12)
+        local backOffset = genPos + Vector3.new(0, 5, 0)
         notify("🏠 Kembali", "Kembali ke belakang Generator...", 3)
         adaptiveCrawlTo(backOffset)
     end
