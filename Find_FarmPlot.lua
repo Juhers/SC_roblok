@@ -86,6 +86,52 @@ local function getGeneratorPosition()
     return nil
 end
 
+local function disableDeepUnderground()
+    if undergroundConnection then
+        undergroundConnection:Disconnect()
+        undergroundConnection = nil
+    end
+
+    humanoid.HipHeight = originalHip
+    humanoid.PlatformStand = false
+
+    local root = getRoot()
+    if root then
+        root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+        root.CFrame = root.CFrame * CFrame.new(0, 80, 0)
+    end
+
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = true
+            v.Massless = false
+        end
+    end
+    notify("⬆️ Naik", "Kembali ke permukaan...", 4)
+    task.wait(5)
+end
+
+local function enableDeepUnderground()
+    local root = getRoot()
+    if not root then return end
+
+    undergroundHomeCFrame = root.CFrame
+    originalHip = humanoid.HipHeight
+    humanoid.HipHeight = -320
+    humanoid.PlatformStand = true
+
+    undergroundConnection = RunService.Heartbeat:Connect(function()
+        local currentRoot = getRoot()
+        if not currentRoot then return end
+        local currentY = currentRoot.Position.Y
+        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
+        currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
+    end)
+
+    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF + NOCLIP", 5)
+end
+
 -- ================== ADAPTIVE CRAWL TO + STRONG NOCLIP ==================
 local crawlNoclipConnection = nil
 
