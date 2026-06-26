@@ -131,7 +131,6 @@ local function disableDeepUnderground()
         end
     end
     notify("⬆️ Naik", "Kembali ke permukaan...", 4)
-    task.wait(2)
 end
 
 -- ================== ADAPTIVE CRAWL TO + TEMPORARY NOCLIP ==================
