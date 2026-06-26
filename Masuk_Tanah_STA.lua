@@ -78,7 +78,7 @@ end
 -- Toggle F
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
-    if input.KeyCode == Enum.KeyCode.F then
+    if input.KeyCode == Enum.KeyCode.L then
         if underground then
             disableDeepUnderground()
         else
