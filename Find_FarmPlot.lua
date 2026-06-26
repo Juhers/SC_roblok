@@ -114,7 +114,7 @@ local function enableDeepUnderground()
     undergroundHomeCFrame = root.CFrame
     originalHip = humanoid.HipHeight
     humanoid.HipHeight = -320
-    humanoid.PlatformStand = truesa
+    humanoid.PlatformStand = true
 
     for _, v in pairs(character:GetDescendants()) do
         if v:IsA("BasePart") then
