@@ -1,5 +1,5 @@
 -- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot + Looping
--- Toggle Loop: Alt + G
+-- Toggle Loop: Tekan F
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -17,7 +17,6 @@ local loopConnection = nil
 local undergroundConnection = nil
 local originalHip = humanoid.HipHeight
 local undergroundHomeCFrame = nil
-local PermanentNoclipEnabled = true
 
 -- ================== NOTIFIKASI ==================
 local function notify(title, text, duration)
@@ -86,6 +85,29 @@ local function getGeneratorPosition()
     return nil
 end
 
+-- ================== UNDERGROUND FUNCTIONS ==================
+local function enableDeepUnderground()
+    local root = getRoot()
+    if not root then return end
+
+    undergroundHomeCFrame = root.CFrame
+    originalHip = humanoid.HipHeight
+    humanoid.HipHeight = -320
+    humanoid.PlatformStand = true
+
+    if undergroundConnection then undergroundConnection:Disconnect() end
+    
+    undergroundConnection = RunService.Heartbeat:Connect(function()
+        local currentRoot = getRoot()
+        if not currentRoot then return end
+        local currentY = currentRoot.Position.Y
+        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
+        currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
+    end)
+
+    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF", 5)
+end
+
 local function disableDeepUnderground()
     if undergroundConnection then
         undergroundConnection:Disconnect()
@@ -109,30 +131,10 @@ local function disableDeepUnderground()
         end
     end
     notify("⬆️ Naik", "Kembali ke permukaan...", 4)
-    task.wait(5)
+    task.wait(2)
 end
 
-local function enableDeepUnderground()
-    local root = getRoot()
-    if not root then return end
-
-    undergroundHomeCFrame = root.CFrame
-    originalHip = humanoid.HipHeight
-    humanoid.HipHeight = -320
-    humanoid.PlatformStand = true
-
-    undergroundConnection = RunService.Heartbeat:Connect(function()
-        local currentRoot = getRoot()
-        if not currentRoot then return end
-        local currentY = currentRoot.Position.Y
-        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
-        currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
-    end)
-
-    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF + NOCLIP", 5)
-end
-
--- ================== ADAPTIVE CRAWL TO + STRONG NOCLIP ==================
+-- ================== ADAPTIVE CRAWL TO + TEMPORARY NOCLIP ==================
 local crawlNoclipConnection = nil
 
 local function StartCrawlNoclip()
@@ -166,7 +168,7 @@ local function adaptiveCrawlTo(targetPos)
     if not root then return end
 
     StartCrawlNoclip()
-    notify("🛡️ Noclip", "Noclip AKTIF - Crawling...", 2)
+    notify("🛡️ Noclip", "Noclip AKTIF - Sedang Crawling...", 2)
 
     local finalTarget = targetPos + Vector3.new(0, 3, 0)
     local BURST_SPEED = 180
@@ -225,6 +227,7 @@ local function adaptiveCrawlTo(targetPos)
 
     task.wait(0.8)
     StopCrawlNoclip()
+    notify("🛡️ Noclip", "Noclip DIMATIKAN", 2)
 end
 
 -- ================== FULL SEQUENCE ==================
@@ -233,10 +236,9 @@ local function performFullSequence()
     isRunning = true
 
     enableDeepUnderground()
-    task.wait(600) -- Tunggu 10 menit untuk stabilisasi underground
+    task.wait(10)
 
     disableDeepUnderground()
-    task.wait(5)
 
     local plots = findAllFarmPlots()
     if #plots > 0 then
@@ -263,7 +265,7 @@ local function toggleLoop()
     isLooping = not isLooping
     
     if isLooping then
-        notify("🔄 LOOP AKTIF", "Auto Farm akan berulang terus...", 5)
+        notify("🔄 LOOP AKTIF", "Auto Farm Loop ON\nTekan F untuk matikan", 6)
         loopConnection = RunService.Heartbeat:Connect(function()
             if not isLooping then 
                 loopConnection:Disconnect()
@@ -278,12 +280,11 @@ local function toggleLoop()
             loopConnection:Disconnect()
             loopConnection = nil
         end
-        notify("⛔ LOOP DIMATIKAN", "Auto Farm Loop telah dimatikan", 5)
+        notify("⛔ LOOP DIMATIKAN", "Auto Farm Loop OFF", 5)
     end
 end
 
 -- ================== HOTKEY ==================
--- Hotkey F
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.F then
@@ -292,7 +293,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- ================== INIT ==================
-notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **Alt + G** untuk toggle looping", 8)
-
--- Optional: Jalankan sekali di awal
--- performFullSequence()
+notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **F** untuk toggle looping", 8)
