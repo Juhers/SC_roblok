@@ -287,7 +287,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
     -- Alt + G = Toggle Loop
-    if input.KeyCode == Enum.KeyCode.U and (UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) or UserInputService:IsKeyDown(Enum.KeyCode.RightAlt)) then
+    if input.KeyCode == Enum.KeyCode.U  then
         toggleLoop()
     end
 end)
