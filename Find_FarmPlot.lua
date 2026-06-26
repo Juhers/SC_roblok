@@ -1,5 +1,5 @@
 -- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot
--- Update: Naik ke Permukaan Dulu Sebelum ke Farm Plot
+-- Fix: Naik ke permukaan pakai disableDeepUnderground (Anti Bounce)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -105,48 +105,6 @@ local function adaptiveCrawlTo(targetPos)
     end
 end
 
--- ================== NEW: RISE TO SURFACE ==================
-local function riseToSurface()
-    local root = getRoot()
-    if not root then return end
-
-    notify("⬆️ Naik", "Sedang naik ke permukaan...", 4)
-
-    -- Matikan underground connection sementara
-    if undergroundConnection then
-        undergroundConnection:Disconnect()
-        undergroundConnection = nil
-    end
-
-    local surfaceY = root.Position.Y + 400  -- Naik cukup tinggi
-    local startPos = root.Position
-
-    -- Gunakan adaptive style untuk naik
-    local targetSurface = Vector3.new(startPos.X, surfaceY, startPos.Z)
-
-    local BURST_SPEED = 120
-    local distance = (targetSurface - startPos).Magnitude
-
-    while distance > 5 do
-        local currentRoot = getRoot()
-        if not currentRoot then break end
-
-        local currentPos = currentRoot.Position
-        local direction = (targetSurface - currentPos).Unit
-        local move = direction * (BURST_SPEED * 0.016)
-
-        currentRoot.CFrame = CFrame.new(currentPos + move)
-        distance = (targetSurface - currentRoot.Position).Magnitude
-
-        RunService.Heartbeat:Wait()
-    end
-
-    -- Final adjustment
-    root.CFrame = CFrame.new(targetSurface)
-    notify("⬆️ Naik Selesai", "Sudah di permukaan", 3)
-    task.wait(0.8)
-end
-
 local function enableDeepUnderground()
     local root = getRoot()
     if not root then return end
@@ -187,6 +145,8 @@ local function disableDeepUnderground()
     if root then
         root.AssemblyLinearVelocity = Vector3.new(0,0,0)
         root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+        -- Dorong sedikit ke atas agar naik ke permukaan
+        root.CFrame = root.CFrame * CFrame.new(0, 80, 0)
     end
 
     for _, v in pairs(character:GetDescendants()) do
@@ -195,7 +155,8 @@ local function disableDeepUnderground()
             v.Massless = false
         end
     end
-    notify("🌍 Underground", "Underground DIMATIKAN", 3)
+    notify("⬆️ Naik", "Kembali ke permukaan...", 4)
+    task.wait(1.5) -- beri waktu stabilisasi
 end
 
 local function teleportToAllFarmPlots()
@@ -229,8 +190,8 @@ local function startFullSequence()
     enableDeepUnderground()
     task.wait(10)
 
-    -- Step 2: Naik ke permukaan
-    riseToSurface()
+    -- Step 2: Naik ke permukaan (pakai disable)
+    disableDeepUnderground()
 
     -- Step 3: Crawl ke semua Farm Plot
     teleportToAllFarmPlots()
@@ -241,11 +202,20 @@ local function startFullSequence()
         adaptiveCrawlTo(undergroundHomeCFrame.Position)
     end
 
+    -- Disable lagi agar bersih
     disableDeepUnderground()
 
     isRunning = false
     notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
 end
+
+-- Hotkey F
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.F then
+        startFullSequence()
+    end
+end)
 
 player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
@@ -259,6 +229,3 @@ player.CharacterAdded:Connect(function(newChar)
 end)
 
 notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl\nTekan F untuk memulai", 6)
-
--- Auto start (hapus baris ini kalau tidak ingin otomatis jalan)
-startFullSequence()
