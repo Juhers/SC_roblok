@@ -209,13 +209,7 @@ local function startFullSequence()
     notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
 end
 
--- Hotkey F
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.O then
-        startFullSequence()
-    end
-end)
+startFullSequence()
 
 player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
