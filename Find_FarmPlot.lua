@@ -291,7 +291,7 @@ local function performFullSequence()
 
     local genPos = getGeneratorPosition()
     if genPos then
-        local backOffset = genPos + Vector3.new(0, 10, 2)
+        local backOffset = genPos + Vector3.new(0, 10, 0)
         notify("🏠 Kembali", "Kembali ke belakang Generator...", 3)
         adaptiveCrawlTo(backOffset)
     end
@@ -333,7 +333,7 @@ end
 -- ================== HOTKEY ==================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.P then
+    if input.KeyCode == Enum.KeyCode.L then
         toggleLoop()
     end
 end)
