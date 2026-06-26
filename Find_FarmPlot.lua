@@ -111,6 +111,7 @@ local function enableDeepUnderground()
     local root = getRoot()
     if not root then return end
 
+    undergroundHomeCFrame = root.CFrame
     originalHip = humanoid.HipHeight
     humanoid.HipHeight = -320
     humanoid.PlatformStand = true
