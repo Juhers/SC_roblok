@@ -95,31 +95,45 @@ local function getGeneratorPosition()
     return nil
 end
 
--- ================== ADAPTIVE CRAWL TO + AUTO NOCLIP ==================
-local noclipConnection = nil  -- Global agar bisa di-control
+-- ================== ADAPTIVE CRAWL TO + STRONG NOCLIP ==================
+local crawlNoclipConnection = nil
 
-local function StartTemporaryNoclip()
-    if noclipConnection then return end  -- Sudah aktif
+local function StartCrawlNoclip()
+    if crawlNoclipConnection then return end
 
-    noclipConnection = RunService.Stepped:Connect(function()
-        if character and character.Parent then
-            for _, child in ipairs(character:GetDescendants()) do
-                if child:IsA("BasePart") and child.CanCollide then
-                    child.CanCollide = false
+    crawlNoclipConnection = RunService.Stepped:Connect(function()
+        local char = player.Character
+        if not char then return end
+
+        -- NOCLIP SUPER AGRESIF
+        for _, child in ipairs(char:GetDescendants()) do
+            if child:IsA("BasePart") then
+                child.CanCollide = false
+                child.Massless = true
+                if child.AssemblyLinearVelocity then
+                    child.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
                 end
             end
-            local hrp = character:FindFirstChild("HumanoidRootPart")
-            if hrp then
-                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            end
+        end
+
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        end
+
+        -- Extra safety
+        local humanoid = char:FindFirstChild("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = true
         end
     end)
 end
 
-local function StopTemporaryNoclip()
-    if noclipConnection then
-        noclipConnection:Disconnect()
-        noclipConnection = nil
+local function StopCrawlNoclip()
+    if crawlNoclipConnection then
+        crawlNoclipConnection:Disconnect()
+        crawlNoclipConnection = nil
     end
 end
 
@@ -127,9 +141,9 @@ local function adaptiveCrawlTo(targetPos)
     local root = getRoot()
     if not root then return end
 
-    -- === NYALAKAN NOCLIP SELAMA CRAWL ===
-    StartTemporaryNoclip()
-    notify("🛡️ Noclip", "Noclip diaktifkan selama crawl", 2)
+    -- NYALAKAN NOCLIP KUAT
+    StartCrawlNoclip()
+    notify("🛡️ Noclip", "Noclip AKTIF - Sedang crawl ke Farm Plot", 3)
 
     local finalTarget = targetPos + Vector3.new(0, 3, 0)
     local BURST_SPEED = 180
@@ -186,10 +200,10 @@ local function adaptiveCrawlTo(targetPos)
         currentRoot.CFrame = CFrame.new(flatPos)
     end
 
-    -- === MATIKAN NOCLIP SETELAH SELESAI CRAWL ===
-    task.wait(0.5)
-    StopTemporaryNoclip()
-    notify("🛡️ Noclip", "Noclip dimatikan", 2)
+    -- MATIKAN NOCLIP SETELAH SELESAI
+    task.wait(0.8)
+    StopCrawlNoclip()
+    notify("🛡️ Noclip", "Noclip DIMATIKAN", 2)
 end
 
 local function enableDeepUnderground()
