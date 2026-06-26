@@ -1,5 +1,5 @@
--- [ Delta Executor ] Deep Underground + Auto Farm Plot Teleport
--- Fix: Anti Kaku saat Teleport Farm Plot
+-- [ Delta Executor ] Deep Underground + Auto Farm Plot
+-- Fix Stuck Teleport - Versi Lebih Kuat
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -21,9 +21,7 @@ local function notify(title, text, duration)
     duration = duration or 4
     pcall(function()
         StarterGui:SetCore("SendNotification", {
-            Title = title;
-            Text = text;
-            Duration = duration;
+            Title = title; Text = text; Duration = duration;
         })
     end)
 end
@@ -54,6 +52,7 @@ local function enableDeepUnderground()
     originalHip = humanoid.HipHeight
     humanoid.HipHeight = -320
     humanoid.PlatformStand = true
+    humanoid.AutoRotate = false
 
     for _, v in pairs(character:GetDescendants()) do
         if v:IsA("BasePart") then
@@ -70,6 +69,7 @@ local function enableDeepUnderground()
         local currentY = currentRoot.Position.Y
         currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
         currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
+        currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end)
 
     notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF", 5)
@@ -83,35 +83,46 @@ local function disableDeepUnderground()
 
     humanoid.HipHeight = originalHip
     humanoid.PlatformStand = false
+    humanoid.AutoRotate = true
 
     local root = getRoot()
     if root then
         root.AssemblyLinearVelocity = Vector3.new(0,0,0)
         root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-        for _, v in pairs(character:GetDescendants()) do
-            if v:IsA("BasePart") then
-                v.CanCollide = true
-                v.Massless = false
-            end
+        root.Anchored = false
+    end
+
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = true
+            v.Massless = false
         end
     end
     notify("🌍 Underground", "Underground DIMATIKAN", 3)
 end
 
--- Teleport yang lebih smooth + anti kaku
+-- TELEPORT SUPER AGRESIF (Anti Stuck)
 local function safeTeleport(targetPos)
     local root = getRoot()
     if not root then return end
 
-    -- Reset physics sebelum teleport
+    -- Matikan semua physics & movement
     root.AssemblyLinearVelocity = Vector3.new(0,0,0)
     root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-    root.Anchored = false
+    root.Anchored = true
+    humanoid.PlatformStand = true
+    humanoid.AutoRotate = false
+
+    task.wait(0.1)
 
     -- Teleport
-    root.CFrame = CFrame.new(targetPos + Vector3.new(0, 6, 0))
-    
-    task.wait(0.15) -- sedikit jeda agar tidak terlalu kaku
+    root.CFrame = CFrame.new(targetPos + Vector3.new(0, 8, 0))
+
+    task.wait(0.2)
+
+    -- Reset physics
+    root.Anchored = false
+    root.AssemblyLinearVelocity = Vector3.new(0, -10, 0)  -- sedikit dorong ke bawah
 end
 
 local function teleportToAllFarmPlots()
@@ -121,9 +132,9 @@ local function teleportToAllFarmPlots()
         return
     end
 
-    notify("🚀 Mulai", "Teleport ke " .. #plots .. " Farm Plot...", 4)
+    notify("🚀 Mulai Teleport", "Ke " .. #plots .. " Farm Plot...", 4)
 
-    -- Matikan sementara underground connection agar tidak konflik
+    -- Matikan underground sementara
     if undergroundConnection then
         undergroundConnection:Disconnect()
         undergroundConnection = nil
@@ -131,8 +142,8 @@ local function teleportToAllFarmPlots()
 
     for i, plotPos in ipairs(plots) do
         safeTeleport(plotPos)
-        notify("📍 Teleport", "Farm Plot " .. i .. "/" .. #plots, 1)
-        task.wait(1)
+        notify("📍 Teleport", "Farm Plot " .. i .. "/" .. #plots, 1.2)
+        task.wait(1.1)
     end
 
     notify("✅ Selesai", "Teleport ke semua Farm Plot selesai!", 5)
@@ -153,35 +164,35 @@ local function startFullSequence()
         return 
     end
 
-    -- Step 1: Masuk Deep Underground
     enableDeepUnderground()
     task.wait(10)
 
-    -- Step 2: Teleport ke semua Farm Plot
     teleportToAllFarmPlots()
 
-    -- Step 3: Kembali ke posisi underground
+    -- Kembali ke posisi underground
     local finalRoot = getRoot()
     if finalRoot and undergroundHomeCFrame then
+        finalRoot.Anchored = true
         finalRoot.CFrame = undergroundHomeCFrame
+        task.wait(0.2)
+        finalRoot.Anchored = false
         notify("🏠 Kembali", "Kembali ke posisi dalam tanah", 4)
     end
 
     disableDeepUnderground()
 
     isRunning = false
-    notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
+    notify("🎉 SELESAI", "Full Sequence selesai!", 6)
 end
 
 -- Hotkey
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F then
+    if input.KeyCode == Enum.KeyCode.P then
         startFullSequence()
     end
 end)
 
--- Respawn handler
 player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
     character = newChar
