@@ -121,7 +121,7 @@ local function disableDeepUnderground()
     if root then
         root.AssemblyLinearVelocity = Vector3.new(0,0,0)
         root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-        root.CFrame = root.CFrame * CFrame.new(0, 80, 0)
+        root.CFrame = root.CFrame * CFrame.new(0, 100, 0)
     end
 
     for _, v in pairs(character:GetDescendants()) do
