@@ -209,6 +209,8 @@ local function startFullSequence()
     notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
 end
 
+startFullSequence()
+
 player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
     character = newChar
@@ -221,5 +223,3 @@ player.CharacterAdded:Connect(function(newChar)
 end)
 
 notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl\nTekan F untuk memulai", 6)
-
-startFullSequence()
