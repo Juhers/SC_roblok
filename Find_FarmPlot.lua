@@ -156,7 +156,7 @@ local function disableDeepUnderground()
         end
     end
     notify("⬆️ Naik", "Kembali ke permukaan...", 4)
-    task.wait(1.5) -- beri waktu stabilisasi
+    task.wait(5) -- beri waktu stabilisasi
 end
 
 local function teleportToAllFarmPlots()
@@ -209,14 +209,6 @@ local function startFullSequence()
     notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
 end
 
--- Hotkey F
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F then
-        startFullSequence()
-    end
-end)
-
 player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
     character = newChar
@@ -229,3 +221,5 @@ player.CharacterAdded:Connect(function(newChar)
 end)
 
 notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl\nTekan F untuk memulai", 6)
+
+startFullSequence()
