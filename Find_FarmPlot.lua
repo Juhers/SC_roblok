@@ -173,7 +173,7 @@ local function disableDeepUnderground()
         end
     end
     notify("⬆️ Naik", "Kembali ke permukaan...", 4)
-    task.wait(1.2)
+    task.wait(10)
 end
 
 local function findAllFarmPlots()
