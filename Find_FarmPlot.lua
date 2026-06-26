@@ -237,10 +237,26 @@ local function adaptiveCrawlTo(targetPos)
     notify("🛡️ Noclip", "Noclip DIMATIKAN", 2)
 end
 
+-- ================== FUNGSI SIMULASI TEKAN TOMBOL ==================
+local function simulateKeyPress(keyCode)
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    
+    -- Tekan tombol
+    VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+    task.wait(0.1)
+    -- Lepas tombol
+    VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+    
+    notify("⌨️ Simulate", "Tombol T ditekan", 2)
+end
+
 -- ================== FULL SEQUENCE ==================
 local function performFullSequence()
     if isRunning then return end
     isRunning = true
+
+-- Tekan T Pertama
+    simulateKeyPress(Enum.KeyCode.T)
 
     enableDeepUnderground()
     task.wait(10)
@@ -264,7 +280,12 @@ local function performFullSequence()
         adaptiveCrawlTo(backOffset)
     end
 
+    -- Tekan T Kedua
+    simulateKeyPress(Enum.KeyCode.T)
+
     task.wait(5)
+
+    -- Keyboard Menekan T
 
     isRunning = false
     notify("✅ Cycle Selesai", "Satu cycle farm selesai", 4)
