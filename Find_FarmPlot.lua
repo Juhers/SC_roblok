@@ -323,4 +323,4 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
 end)
 
 -- ================== INIT ==================
-notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **K** untuk toggle looping", 8)
+notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **Q** untuk toggle looping", 8)
