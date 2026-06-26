@@ -57,7 +57,6 @@ local function StartPermanentNoclip()
         ConnectNoclip()
     end)
 end
-StartPermanentNoclip()
 
 -- ================== DETEKSI FARM PLOT VIA FULL PATH ==================
 local function findAllFarmPlots()
