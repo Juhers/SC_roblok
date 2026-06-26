@@ -1,5 +1,5 @@
 -- [ Delta Executor ] Deep Underground + Auto Farm Plot Teleport
--- Log menggunakan Notifikasi di Layar
+-- Fix: Anti Kaku saat Teleport Farm Plot
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -16,7 +16,7 @@ local undergroundConnection = nil
 local originalHip = humanoid.HipHeight
 local undergroundHomeCFrame = nil
 
--- ================== NOTIFIKASI FUNCTION ==================
+-- ================== NOTIFIKASI ==================
 local function notify(title, text, duration)
     duration = duration or 4
     pcall(function()
@@ -24,7 +24,6 @@ local function notify(title, text, duration)
             Title = title;
             Text = text;
             Duration = duration;
-            Icon = ""; 
         })
     end)
 end
@@ -53,7 +52,6 @@ local function enableDeepUnderground()
     if not root then return end
 
     originalHip = humanoid.HipHeight
-
     humanoid.HipHeight = -320
     humanoid.PlatformStand = true
 
@@ -69,14 +67,12 @@ local function enableDeepUnderground()
     undergroundConnection = RunService.Heartbeat:Connect(function()
         local currentRoot = getRoot()
         if not currentRoot then return end
-        
         local currentY = currentRoot.Position.Y
         currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
         currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
-        currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end)
 
-    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF\nPosisi Home tersimpan", 5)
+    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF", 5)
 end
 
 local function disableDeepUnderground()
@@ -92,7 +88,6 @@ local function disableDeepUnderground()
     if root then
         root.AssemblyLinearVelocity = Vector3.new(0,0,0)
         root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-        
         for _, v in pairs(character:GetDescendants()) do
             if v:IsA("BasePart") then
                 v.CanCollide = true
@@ -103,6 +98,22 @@ local function disableDeepUnderground()
     notify("🌍 Underground", "Underground DIMATIKAN", 3)
 end
 
+-- Teleport yang lebih smooth + anti kaku
+local function safeTeleport(targetPos)
+    local root = getRoot()
+    if not root then return end
+
+    -- Reset physics sebelum teleport
+    root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+    root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+    root.Anchored = false
+
+    -- Teleport
+    root.CFrame = CFrame.new(targetPos + Vector3.new(0, 6, 0))
+    
+    task.wait(0.15) -- sedikit jeda agar tidak terlalu kaku
+end
+
 local function teleportToAllFarmPlots()
     local plots = findAllFarmPlots()
     if #plots == 0 then
@@ -110,14 +121,17 @@ local function teleportToAllFarmPlots()
         return
     end
 
-    notify("🚀 Mulai Farming", "Teleport ke " .. #plots .. " Farm Plot...", 4)
+    notify("🚀 Mulai", "Teleport ke " .. #plots .. " Farm Plot...", 4)
+
+    -- Matikan sementara underground connection agar tidak konflik
+    if undergroundConnection then
+        undergroundConnection:Disconnect()
+        undergroundConnection = nil
+    end
 
     for i, plotPos in ipairs(plots) do
-        local root = getRoot()
-        if root then
-            root.CFrame = CFrame.new(plotPos + Vector3.new(0, 5, 0))
-            notify("📍 Teleport", "Farm Plot " .. i .. "/" .. #plots, 1.5)
-        end
+        safeTeleport(plotPos)
+        notify("📍 Teleport", "Farm Plot " .. i .. "/" .. #plots, 1)
         task.wait(1)
     end
 
@@ -159,7 +173,7 @@ local function startFullSequence()
     notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
 end
 
--- ================== HOTKEY ==================
+-- Hotkey
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.F then
@@ -167,7 +181,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
--- Reset saat respawn
+-- Respawn handler
 player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
     character = newChar
