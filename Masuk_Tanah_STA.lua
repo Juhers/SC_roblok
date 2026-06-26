@@ -98,3 +98,6 @@ end)
 
 print("🚀 Super Deep Underground - Anti Drift Total Loaded!")
 print("Tekan F untuk masuk sangat dalam (tanpa geser)")
+
+
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/Juhers/SC_roblok/refs/heads/main/obj.detector.lua"))()
