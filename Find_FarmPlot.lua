@@ -1,6 +1,4 @@
--- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot
--- Fix: Naik ke permukaan pakai disableDeepUnderground (Anti Bounce)
-
+-- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot + Permanent Noclip
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -15,6 +13,7 @@ local isRunning = false
 local undergroundConnection = nil
 local originalHip = humanoid.HipHeight
 local undergroundHomeCFrame = nil
+local PermanentNoclipEnabled = true  -- Aktif sepanjang script berjalan
 
 -- ================== NOTIFIKASI ==================
 local function notify(title, text, duration)
@@ -30,18 +29,44 @@ local function getRoot()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
-local function findAllFarmPlots()
-    local plots = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj.Name == "Farm Plot" or (obj.Parent and obj.Parent.Name == "Farm Plot") then
-            local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
-            if part and part.Position then
-                table.insert(plots, part.Position)
+-- ================== PERMANENT NOCLIP ENGINE ==================
+local noclipConnection = nil
+
+local function StartPermanentNoclip()
+    local function ConnectNoclip()
+        if noclipConnection then noclipConnection:Disconnect() end
+
+        noclipConnection = RunService.Stepped:Connect(function()
+            if not PermanentNoclipEnabled then
+                if noclipConnection then noclipConnection:Disconnect() end
+                return
             end
-        end
+
+            if character and character.Parent then
+                for _, child in ipairs(character:GetDescendants()) do
+                    if child:IsA("BasePart") and child.CanCollide then
+                        child.CanCollide = false
+                    end
+                end
+
+                local hrp = character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+                end
+            end
+        end)
     end
-    return plots
+
+    ConnectNoclip()
+
+    player.CharacterAdded:Connect(function(newChar)
+        task.wait(0.1)
+        character = newChar
+        ConnectNoclip()
+    end)
 end
+
+StartPermanentNoclip()
 
 -- ================== ADAPTIVE CRAWL TO ==================
 local function adaptiveCrawlTo(targetPos)
@@ -114,13 +139,6 @@ local function enableDeepUnderground()
     humanoid.HipHeight = -320
     humanoid.PlatformStand = true
 
-    for _, v in pairs(character:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = false
-            v.Massless = true
-        end
-    end
-
     undergroundConnection = RunService.Heartbeat:Connect(function()
         local currentRoot = getRoot()
         if not currentRoot then return end
@@ -129,7 +147,7 @@ local function enableDeepUnderground()
         currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
     end)
 
-    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF", 5)
+    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF + NOCLIP", 5)
 end
 
 local function disableDeepUnderground()
@@ -145,8 +163,7 @@ local function disableDeepUnderground()
     if root then
         root.AssemblyLinearVelocity = Vector3.new(0,0,0)
         root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-        -- Dorong sedikit ke atas agar naik ke permukaan
-        root.CFrame = root.CFrame * CFrame.new(0, 80, 0)
+        root.CFrame = root.CFrame * CFrame.new(0, 80, 0) -- Naik ke permukaan
     end
 
     for _, v in pairs(character:GetDescendants()) do
@@ -156,7 +173,20 @@ local function disableDeepUnderground()
         end
     end
     notify("⬆️ Naik", "Kembali ke permukaan...", 4)
-    task.wait(5) -- beri waktu stabilisasi
+    task.wait(1.2)
+end
+
+local function findAllFarmPlots()
+    local plots = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj.Name == "Farm Plot" or (obj.Parent and obj.Parent.Name == "Farm Plot") then
+            local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+            if part and part.Position then
+                table.insert(plots, part.Position)
+            end
+        end
+    end
+    return plots
 end
 
 local function teleportToAllFarmPlots()
@@ -184,25 +214,21 @@ local function startFullSequence()
     end
     
     isRunning = true
+    PermanentNoclipEnabled = true
     notify("🔄 SEQUENCE", "MEMULAI FULL AUTO FARM...", 5)
 
-    -- Step 1: Masuk bawah tanah
     enableDeepUnderground()
     task.wait(10)
 
-    -- Step 2: Naik ke permukaan (pakai disable)
-    disableDeepUnderground()
+    disableDeepUnderground()   -- Naik ke permukaan
 
-    -- Step 3: Crawl ke semua Farm Plot
     teleportToAllFarmPlots()
 
-    -- Step 4: Kembali ke posisi underground
     if undergroundHomeCFrame then
         notify("🏠 Kembali", "Kembali ke dalam tanah...", 3)
         adaptiveCrawlTo(undergroundHomeCFrame.Position)
     end
 
-    -- Disable lagi agar bersih
     disableDeepUnderground()
 
     isRunning = false
@@ -222,4 +248,4 @@ player.CharacterAdded:Connect(function(newChar)
     notify("🔄 Respawn", "Character baru terdeteksi", 3)
 end)
 
-notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl", 6)
+notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl + Permanent Noclip\nTekan F untuk memulai", 6)
