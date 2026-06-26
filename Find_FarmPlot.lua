@@ -255,14 +255,14 @@ local function performFullSequence()
     if isRunning then return end
     isRunning = true
 
--- Tekan T Pertama
-    simulateKeyPress(Enum.KeyCode.T)
-
     enableDeepUnderground()
     task.wait(600)
 
     disableDeepUnderground()
     task.wait(5)
+
+    -- Tekan T Pertama
+    simulateKeyPress(Enum.KeyCode.T)
 
     local plots = findAllFarmPlots()
     if #plots > 0 then
