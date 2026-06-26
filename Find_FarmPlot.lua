@@ -187,7 +187,7 @@ local function performFullSequence()
     isRunning = true
 
     enableDeepUnderground()
-    task.wait(10)
+    task.wait(600) -- Tunggu 10 menit untuk stabilisasi underground
 
     disableDeepUnderground()
     task.wait(5)
