@@ -1,5 +1,5 @@
--- [ Delta Executor ] Deep Underground + Auto Farm Plot
--- Fix Stuck Teleport - Versi Lebih Kuat
+-- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot
+-- Movement menggunakan adaptiveCrawlTo (smooth & anti-snapback)
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -20,9 +20,7 @@ local undergroundHomeCFrame = nil
 local function notify(title, text, duration)
     duration = duration or 4
     pcall(function()
-        StarterGui:SetCore("SendNotification", {
-            Title = title; Text = text; Duration = duration;
-        })
+        StarterGui:SetCore("SendNotification", {Title = title; Text = text; Duration = duration;})
     end)
 end
 
@@ -45,6 +43,70 @@ local function findAllFarmPlots()
     return plots
 end
 
+-- ================== ADAPTIVE CRAWL TO ==================
+local function adaptiveCrawlTo(targetPos)
+    local root = getRoot()
+    if not root then return end
+
+    local finalTarget = targetPos + Vector3.new(0, 3, 0)
+    local BURST_SPEED = 180
+    local SLOW_SPEED = 5
+    local CLEARANCE_COOLDOWN = 0.8  
+    local SLOW_ZONE_DURATION = 0.35
+
+    local lastWallDetectedTime = 0
+    local lockedYHeight = root.Position.Y
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {player.Character}
+
+    notify("🚀 Crawling", "Menuju Farm Plot...", 2)
+
+    while true do
+        local currentRoot = getRoot()
+        if not currentRoot or not currentRoot.Parent then break end
+
+        local deltaTime = RunService.Heartbeat:Wait()
+
+        local currentPos = currentRoot.Position
+        local flatTarget = Vector3.new(finalTarget.X, lockedYHeight, finalTarget.Z)
+        local remainingVector = flatTarget - currentPos
+        local totalDistance = remainingVector.Magnitude
+
+        if totalDistance <= 2.0 then
+            currentRoot.CFrame = CFrame.new(finalTarget)
+            currentRoot.AssemblyLinearVelocity = Vector3.new(0, -5, 0)
+            currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            break
+        end
+
+        if totalDistance < 0.1 then break end
+
+        local direction = remainingVector.Unit
+        local rayResult = workspace:Raycast(currentPos, direction * 5, raycastParams)
+
+        if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
+            lastWallDetectedTime = os.clock()
+        end
+
+        local currentAllowedSpeed = SLOW_SPEED
+        if os.clock() - lastWallDetectedTime >= CLEARANCE_COOLDOWN then
+            local serverTime = workspace:GetServerTimeNow()
+            local fraction = serverTime % 1.0
+            if fraction < (1.0 - SLOW_ZONE_DURATION) then
+                currentAllowedSpeed = BURST_SPEED
+            end
+        end
+
+        local frameTravel = math.min(currentAllowedSpeed * deltaTime, totalDistance)
+        local nextPos = currentPos + (direction * frameTravel)
+        local flatPos = Vector3.new(nextPos.X, lockedYHeight, nextPos.Z)
+
+        currentRoot.CFrame = CFrame.new(flatPos)
+    end
+end
+
 local function enableDeepUnderground()
     local root = getRoot()
     if not root then return end
@@ -52,7 +114,6 @@ local function enableDeepUnderground()
     originalHip = humanoid.HipHeight
     humanoid.HipHeight = -320
     humanoid.PlatformStand = true
-    humanoid.AutoRotate = false
 
     for _, v in pairs(character:GetDescendants()) do
         if v:IsA("BasePart") then
@@ -69,7 +130,6 @@ local function enableDeepUnderground()
         local currentY = currentRoot.Position.Y
         currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
         currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
-        currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
     end)
 
     notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF", 5)
@@ -83,13 +143,11 @@ local function disableDeepUnderground()
 
     humanoid.HipHeight = originalHip
     humanoid.PlatformStand = false
-    humanoid.AutoRotate = true
 
     local root = getRoot()
     if root then
         root.AssemblyLinearVelocity = Vector3.new(0,0,0)
         root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-        root.Anchored = false
     end
 
     for _, v in pairs(character:GetDescendants()) do
@@ -101,30 +159,6 @@ local function disableDeepUnderground()
     notify("🌍 Underground", "Underground DIMATIKAN", 3)
 end
 
--- TELEPORT SUPER AGRESIF (Anti Stuck)
-local function safeTeleport(targetPos)
-    local root = getRoot()
-    if not root then return end
-
-    -- Matikan semua physics & movement
-    root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-    root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-    root.Anchored = true
-    humanoid.PlatformStand = true
-    humanoid.AutoRotate = false
-
-    task.wait(0.1)
-
-    -- Teleport
-    root.CFrame = CFrame.new(targetPos + Vector3.new(0, 8, 0))
-
-    task.wait(0.2)
-
-    -- Reset physics
-    root.Anchored = false
-    root.AssemblyLinearVelocity = Vector3.new(0, -10, 0)  -- sedikit dorong ke bawah
-end
-
 local function teleportToAllFarmPlots()
     local plots = findAllFarmPlots()
     if #plots == 0 then
@@ -132,21 +166,21 @@ local function teleportToAllFarmPlots()
         return
     end
 
-    notify("🚀 Mulai Teleport", "Ke " .. #plots .. " Farm Plot...", 4)
+    notify("🚀 Mulai Crawl", "Menuju " .. #plots .. " Farm Plot...", 4)
 
-    -- Matikan underground sementara
+    -- Matikan underground dulu
     if undergroundConnection then
         undergroundConnection:Disconnect()
         undergroundConnection = nil
     end
 
     for i, plotPos in ipairs(plots) do
-        safeTeleport(plotPos)
-        notify("📍 Teleport", "Farm Plot " .. i .. "/" .. #plots, 1.2)
-        task.wait(1.1)
+        adaptiveCrawlTo(plotPos)
+        notify("📍 Crawl Selesai", "Farm Plot " .. i .. "/" .. #plots, 1.5)
+        task.wait(1)
     end
 
-    notify("✅ Selesai", "Teleport ke semua Farm Plot selesai!", 5)
+    notify("✅ Selesai", "Telah mengunjungi semua Farm Plot", 5)
 end
 
 local function startFullSequence()
@@ -156,39 +190,29 @@ local function startFullSequence()
     end
     
     isRunning = true
-    notify("🔄 SEQUENCE", "MEMULAI FULL AUTO FARM...", 4)
-
-    local root = getRoot()
-    if not root then 
-        isRunning = false
-        return 
-    end
+    notify("🔄 SEQUENCE", "MEMULAI FULL AUTO FARM...", 5)
 
     enableDeepUnderground()
     task.wait(10)
 
     teleportToAllFarmPlots()
 
-    -- Kembali ke posisi underground
-    local finalRoot = getRoot()
-    if finalRoot and undergroundHomeCFrame then
-        finalRoot.Anchored = true
-        finalRoot.CFrame = undergroundHomeCFrame
-        task.wait(0.2)
-        finalRoot.Anchored = false
-        notify("🏠 Kembali", "Kembali ke posisi dalam tanah", 4)
+    -- Kembali ke posisi underground menggunakan adaptiveCrawlTo juga
+    if undergroundHomeCFrame then
+        notify("🏠 Kembali", "Kembali ke posisi dalam tanah...", 3)
+        adaptiveCrawlTo(undergroundHomeCFrame.Position)
     end
 
     disableDeepUnderground()
 
     isRunning = false
-    notify("🎉 SELESAI", "Full Sequence selesai!", 6)
+    notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
 end
 
--- Hotkey
+-- Hotkey F
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.P then
+    if input.KeyCode == Enum.KeyCode.O then
         startFullSequence()
     end
 end)
@@ -204,4 +228,4 @@ player.CharacterAdded:Connect(function(newChar)
     notify("🔄 Respawn", "Character baru terdeteksi", 3)
 end)
 
-notify("🚀 Script Loaded", "Deep Underground + Auto Farm Plot\nTekan F untuk memulai", 6)
+notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl\nTekan F untuk memulai", 6)
