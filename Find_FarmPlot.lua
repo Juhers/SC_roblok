@@ -1,5 +1,5 @@
 -- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot
--- Movement menggunakan adaptiveCrawlTo (smooth & anti-snapback)
+-- Update: Naik ke Permukaan Dulu Sebelum ke Farm Plot
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -61,8 +61,6 @@ local function adaptiveCrawlTo(targetPos)
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
     raycastParams.FilterDescendantsInstances = {player.Character}
 
-    notify("🚀 Crawling", "Menuju Farm Plot...", 2)
-
     while true do
         local currentRoot = getRoot()
         if not currentRoot or not currentRoot.Parent then break end
@@ -107,6 +105,48 @@ local function adaptiveCrawlTo(targetPos)
     end
 end
 
+-- ================== NEW: RISE TO SURFACE ==================
+local function riseToSurface()
+    local root = getRoot()
+    if not root then return end
+
+    notify("⬆️ Naik", "Sedang naik ke permukaan...", 4)
+
+    -- Matikan underground connection sementara
+    if undergroundConnection then
+        undergroundConnection:Disconnect()
+        undergroundConnection = nil
+    end
+
+    local surfaceY = root.Position.Y + 400  -- Naik cukup tinggi
+    local startPos = root.Position
+
+    -- Gunakan adaptive style untuk naik
+    local targetSurface = Vector3.new(startPos.X, surfaceY, startPos.Z)
+
+    local BURST_SPEED = 120
+    local distance = (targetSurface - startPos).Magnitude
+
+    while distance > 5 do
+        local currentRoot = getRoot()
+        if not currentRoot then break end
+
+        local currentPos = currentRoot.Position
+        local direction = (targetSurface - currentPos).Unit
+        local move = direction * (BURST_SPEED * 0.016)
+
+        currentRoot.CFrame = CFrame.new(currentPos + move)
+        distance = (targetSurface - currentRoot.Position).Magnitude
+
+        RunService.Heartbeat:Wait()
+    end
+
+    -- Final adjustment
+    root.CFrame = CFrame.new(targetSurface)
+    notify("⬆️ Naik Selesai", "Sudah di permukaan", 3)
+    task.wait(0.8)
+end
+
 local function enableDeepUnderground()
     local root = getRoot()
     if not root then return end
@@ -122,8 +162,6 @@ local function enableDeepUnderground()
             v.Massless = true
         end
     end
-
-    undergroundHomeCFrame = root.CFrame
 
     undergroundConnection = RunService.Heartbeat:Connect(function()
         local currentRoot = getRoot()
@@ -169,12 +207,6 @@ local function teleportToAllFarmPlots()
 
     notify("🚀 Mulai Crawl", "Menuju " .. #plots .. " Farm Plot...", 4)
 
-    -- Matikan underground dulu
-    if undergroundConnection then
-        undergroundConnection:Disconnect()
-        undergroundConnection = nil
-    end
-
     for i, plotPos in ipairs(plots) do
         adaptiveCrawlTo(plotPos)
         notify("📍 Crawl Selesai", "Farm Plot " .. i .. "/" .. #plots, 1.5)
@@ -193,14 +225,19 @@ local function startFullSequence()
     isRunning = true
     notify("🔄 SEQUENCE", "MEMULAI FULL AUTO FARM...", 5)
 
+    -- Step 1: Masuk bawah tanah
     enableDeepUnderground()
     task.wait(10)
 
+    -- Step 2: Naik ke permukaan
+    riseToSurface()
+
+    -- Step 3: Crawl ke semua Farm Plot
     teleportToAllFarmPlots()
 
-    -- Kembali ke posisi underground menggunakan adaptiveCrawlTo juga
+    -- Step 4: Kembali ke posisi underground
     if undergroundHomeCFrame then
-        notify("🏠 Kembali", "Kembali ke posisi dalam tanah...", 3)
+        notify("🏠 Kembali", "Kembali ke dalam tanah...", 3)
         adaptiveCrawlTo(undergroundHomeCFrame.Position)
     end
 
@@ -209,8 +246,6 @@ local function startFullSequence()
     isRunning = false
     notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
 end
-
-startFullSequence()
 
 player.CharacterAdded:Connect(function(newChar)
     task.wait(0.5)
@@ -222,3 +257,8 @@ player.CharacterAdded:Connect(function(newChar)
     isRunning = false
     notify("🔄 Respawn", "Character baru terdeteksi", 3)
 end)
+
+notify("🚀 Script Loaded", "Deep Underground + Adaptive Crawl\nTekan F untuk memulai", 6)
+
+-- Auto start (hapus baris ini kalau tidak ingin otomatis jalan)
+startFullSequence()
