@@ -259,12 +259,13 @@ local function performFullSequence()
 
     local genPos = getGeneratorPosition()
     if genPos then
-        local backOffset = genPos + Vector3.new(0, 5, 0)
+        local backOffset = genPos + Vector3.new(0, 10, 0)
         notify("🏠 Kembali", "Kembali ke belakang Generator...", 3)
         adaptiveCrawlTo(backOffset)
     end
 
-    disableDeepUnderground()
+    task.wait(5)
+
     isRunning = false
     notify("✅ Cycle Selesai", "Satu cycle farm selesai", 4)
 end
