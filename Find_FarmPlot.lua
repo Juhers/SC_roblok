@@ -31,33 +31,6 @@ local function getRoot()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
--- ================== PERMANENT NOCLIP ==================
-local noclipConnection = nil
-local function StartPermanentNoclip()
-    local function ConnectNoclip()
-        if noclipConnection then noclipConnection:Disconnect() end
-        noclipConnection = RunService.Stepped:Connect(function()
-            if not PermanentNoclipEnabled then return end
-            if character and character.Parent then
-                for _, child in ipairs(character:GetDescendants()) do
-                    if child:IsA("BasePart") and child.CanCollide then
-                        child.CanCollide = false
-                    end
-                end
-                local hrp = character:FindFirstChild("HumanoidRootPart")
-                if hrp then hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0) end
-            end
-        end)
-    end
-    ConnectNoclip()
-
-    player.CharacterAdded:Connect(function(newChar)
-        task.wait(0.1)
-        character = newChar
-        ConnectNoclip()
-    end)
-end
-
 -- ================== DETEKSI FARM PLOT VIA FULL PATH ==================
 local function findAllFarmPlots()
     local plots = {}
@@ -122,10 +95,41 @@ local function getGeneratorPosition()
     return nil
 end
 
--- ================== ADAPTIVE CRAWL TO ==================
+-- ================== ADAPTIVE CRAWL TO + AUTO NOCLIP ==================
+local noclipConnection = nil  -- Global agar bisa di-control
+
+local function StartTemporaryNoclip()
+    if noclipConnection then return end  -- Sudah aktif
+
+    noclipConnection = RunService.Stepped:Connect(function()
+        if character and character.Parent then
+            for _, child in ipairs(character:GetDescendants()) do
+                if child:IsA("BasePart") and child.CanCollide then
+                    child.CanCollide = false
+                end
+            end
+            local hrp = character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            end
+        end
+    end)
+end
+
+local function StopTemporaryNoclip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+end
+
 local function adaptiveCrawlTo(targetPos)
     local root = getRoot()
     if not root then return end
+
+    -- === NYALAKAN NOCLIP SELAMA CRAWL ===
+    StartTemporaryNoclip()
+    notify("🛡️ Noclip", "Noclip diaktifkan selama crawl", 2)
 
     local finalTarget = targetPos + Vector3.new(0, 3, 0)
     local BURST_SPEED = 180
@@ -181,6 +185,11 @@ local function adaptiveCrawlTo(targetPos)
 
         currentRoot.CFrame = CFrame.new(flatPos)
     end
+
+    -- === MATIKAN NOCLIP SETELAH SELESAI CRAWL ===
+    task.wait(0.5)
+    StopTemporaryNoclip()
+    notify("🛡️ Noclip", "Noclip dimatikan", 2)
 end
 
 local function enableDeepUnderground()
