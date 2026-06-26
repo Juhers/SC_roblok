@@ -283,11 +283,10 @@ local function toggleLoop()
 end
 
 -- ================== HOTKEY ==================
+-- Hotkey F
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    
-    -- Alt + G = Toggle Loop
-    if input.KeyCode == Enum.KeyCode.U  then
+    if input.KeyCode == Enum.KeyCode.F then
         toggleLoop()
     end
 end)
