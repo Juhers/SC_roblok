@@ -259,7 +259,7 @@ local function performFullSequence()
     simulateKeyPress(Enum.KeyCode.T)
 
     enableDeepUnderground()
-    task.wait(10)
+    task.wait(600)
 
     disableDeepUnderground()
     task.wait(5)
