@@ -133,7 +133,7 @@ local function disableDeepUnderground()
     notify("⬆️ Naik", "Kembali ke permukaan...", 4)
 end
 
--- ================== ADAPTIVE CRAWL TO + TEMPORARY NOCLIP ==================
+-- ================== ADAPTIVE CRAWL TO (FIXED - Anti Tenggelam) ==================
 local crawlNoclipConnection = nil
 
 local function StartCrawlNoclip()
@@ -169,14 +169,13 @@ local function adaptiveCrawlTo(targetPos)
     StartCrawlNoclip()
     notify("🛡️ Noclip", "Noclip AKTIF - Sedang Crawling...", 2)
 
-    local finalTarget = targetPos + Vector3.new(0, 3, 0)
-    local BURST_SPEED = 180
-    local SLOW_SPEED = 5
-    local CLEARANCE_COOLDOWN = 0.8  
-    local SLOW_ZONE_DURATION = 0.35
+    local finalTarget = targetPos + Vector3.new(0, 5, 0)  -- Naik 5 studs di atas target
+    local BURST_SPEED = 160
+    local SLOW_SPEED = 8
+    local CLEARANCE_COOLDOWN = 0.7  
+    local SLOW_ZONE_DURATION = 0.4
 
     local lastWallDetectedTime = 0
-    local lockedYHeight = root.Position.Y
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -188,26 +187,28 @@ local function adaptiveCrawlTo(targetPos)
 
         local deltaTime = RunService.Heartbeat:Wait()
         local currentPos = currentRoot.Position
-        local flatTarget = Vector3.new(finalTarget.X, lockedYHeight, finalTarget.Z)
-        local remainingVector = flatTarget - currentPos
+        local remainingVector = finalTarget - currentPos
         local totalDistance = remainingVector.Magnitude
 
-        if totalDistance <= 2.0 then
+        -- Finish condition
+        if totalDistance <= 3.0 then
             currentRoot.CFrame = CFrame.new(finalTarget)
-            currentRoot.AssemblyLinearVelocity = Vector3.new(0, -5, 0)
+            currentRoot.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
             currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             break
         end
 
-        if totalDistance < 0.1 then break end
+        if totalDistance < 0.5 then break end
 
         local direction = remainingVector.Unit
-        local rayResult = workspace:Raycast(currentPos, direction * 5, raycastParams)
 
+        -- Raycast untuk deteksi obstacle
+        local rayResult = workspace:Raycast(currentPos, direction * 6, raycastParams)
         if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
             lastWallDetectedTime = os.clock()
         end
 
+        -- Kecepatan
         local currentAllowedSpeed = SLOW_SPEED
         if os.clock() - lastWallDetectedTime >= CLEARANCE_COOLDOWN then
             local serverTime = workspace:GetServerTimeNow()
@@ -219,12 +220,19 @@ local function adaptiveCrawlTo(targetPos)
 
         local frameTravel = math.min(currentAllowedSpeed * deltaTime, totalDistance)
         local nextPos = currentPos + (direction * frameTravel)
-        local flatPos = Vector3.new(nextPos.X, lockedYHeight, nextPos.Z)
 
-        currentRoot.CFrame = CFrame.new(flatPos)
+        -- Terapkan pergerakan
+        currentRoot.CFrame = CFrame.new(nextPos)
     end
 
-    task.wait(0.8)
+    -- Final positioning & cleanup
+    task.wait(0.6)
+    local finalRoot = getRoot()
+    if finalRoot then
+        finalRoot.CFrame = CFrame.new(finalTarget)
+        finalRoot.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
+    end
+
     StopCrawlNoclip()
     notify("🛡️ Noclip", "Noclip DIMATIKAN", 2)
 end
