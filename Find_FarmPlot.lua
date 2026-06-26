@@ -57,7 +57,6 @@ local function StartPermanentNoclip()
         ConnectNoclip()
     end)
 end
-StartPermanentNoclip()
 
 -- ================== DETEKSI FARM PLOT VIA FULL PATH ==================
 local function findAllFarmPlots()
@@ -269,7 +268,8 @@ local function startFullSequence()
     local genPos = getGeneratorPosition()
     if genPos then
         notify("🏠 Kembali", "Kembali ke Generator Position...", 3)
-        adaptiveCrawlTo(genPos)
+        local backOffset = genPos + Vector3.new(0, 5, 12)  -- 12 studs ke belakang (bisa diubah)
+        adaptiveCrawlTo(backOffset)
     elseif undergroundHomeCFrame then
         adaptiveCrawlTo(undergroundHomeCFrame.Position)
     end
