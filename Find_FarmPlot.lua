@@ -1,5 +1,5 @@
--- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot + Permanent Noclip
--- Update: Deteksi via Full Path + Generator Position
+-- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot + Looping
+-- Toggle Loop: Alt + G
 
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
@@ -12,6 +12,8 @@ local root = character:WaitForChild("HumanoidRootPart")
 local humanoid = character:WaitForChild("Humanoid")
 
 local isRunning = false
+local isLooping = false
+local loopConnection = nil
 local undergroundConnection = nil
 local originalHip = humanoid.HipHeight
 local undergroundHomeCFrame = nil
@@ -31,16 +33,13 @@ local function getRoot()
     return char:FindFirstChild("HumanoidRootPart")
 end
 
--- ================== DETEKSI FARM PLOT VIA FULL PATH ==================
+-- ================== DETEKSI FARM PLOT & GENERATOR ==================
 local function findAllFarmPlots()
     local plots = {}
-    
     local Structures = workspace:FindFirstChild("Structures")
     if Structures then
-        -- Deteksi Farm Plot berdasarkan Full Path
         for _, obj in ipairs(Structures:GetChildren()) do
             if obj.Name == "Farm Plot" or obj.Name == "FarmPlot" then
-                -- Ambil Mesh atau BasePart utama
                 local mesh = obj:FindFirstChild("Mesh") or obj:FindFirstChildWhichIsA("BasePart")
                 if mesh then
                     table.insert(plots, mesh:GetPivot().Position)
@@ -51,7 +50,6 @@ local function findAllFarmPlots()
         end
     end
 
-    -- Fallback jika tidak ditemukan di Structures
     if #plots == 0 then
         for _, obj in ipairs(workspace:GetDescendants()) do
             if obj.Name == "Farm Plot" or (obj.Parent and obj.Parent.Name == "Farm Plot") then
@@ -62,16 +60,12 @@ local function findAllFarmPlots()
             end
         end
     end
-
-    print("✅ Ditemukan " .. #plots .. " Farm Plot di Structures")
     return plots
 end
 
--- ================== GET GENERATOR POSITION (Posisi Utama) ==================
 local cachedGeneratorPos = nil
 local function getGeneratorPosition()
     if cachedGeneratorPos then return cachedGeneratorPos end
-
     local Structures = workspace:FindFirstChild("Structures")
     if Structures then
         for _, obj in ipairs(Structures:GetChildren()) do
@@ -84,14 +78,11 @@ local function getGeneratorPosition()
             end
         end
     end
-
-    -- Fallback
     local gen = workspace:FindFirstChild("Generator", true)
     if gen then
         cachedGeneratorPos = gen:GetPivot().Position
         return cachedGeneratorPos
     end
-
     return nil
 end
 
@@ -100,32 +91,19 @@ local crawlNoclipConnection = nil
 
 local function StartCrawlNoclip()
     if crawlNoclipConnection then return end
-
     crawlNoclipConnection = RunService.Stepped:Connect(function()
         local char = player.Character
         if not char then return end
-
-        -- NOCLIP SUPER AGRESIF
         for _, child in ipairs(char:GetDescendants()) do
             if child:IsA("BasePart") then
                 child.CanCollide = false
                 child.Massless = true
-                if child.AssemblyLinearVelocity then
-                    child.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-                end
             end
         end
-
         local hrp = char:FindFirstChild("HumanoidRootPart")
         if hrp then
             hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
             hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        end
-
-        -- Extra safety
-        local humanoid = char:FindFirstChild("Humanoid")
-        if humanoid then
-            humanoid.PlatformStand = true
         end
     end)
 end
@@ -141,9 +119,8 @@ local function adaptiveCrawlTo(targetPos)
     local root = getRoot()
     if not root then return end
 
-    -- NYALAKAN NOCLIP KUAT
     StartCrawlNoclip()
-    notify("🛡️ Noclip", "Noclip AKTIF - Sedang crawl ke Farm Plot", 3)
+    notify("🛡️ Noclip", "Noclip AKTIF - Crawling...", 2)
 
     local finalTarget = targetPos + Vector3.new(0, 3, 0)
     local BURST_SPEED = 180
@@ -200,119 +177,77 @@ local function adaptiveCrawlTo(targetPos)
         currentRoot.CFrame = CFrame.new(flatPos)
     end
 
-    -- MATIKAN NOCLIP SETELAH SELESAI
     task.wait(0.8)
     StopCrawlNoclip()
-    notify("🛡️ Noclip", "Noclip DIMATIKAN", 2)
 end
 
-local function enableDeepUnderground()
-    local root = getRoot()
-    if not root then return end
-
-    undergroundHomeCFrame = root.CFrame
-    originalHip = humanoid.HipHeight
-    humanoid.HipHeight = -320
-    humanoid.PlatformStand = true
-
-    undergroundConnection = RunService.Heartbeat:Connect(function()
-        local currentRoot = getRoot()
-        if not currentRoot then return end
-        local currentY = currentRoot.Position.Y
-        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
-        currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
-    end)
-
-    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF + NOCLIP", 5)
-end
-
-local function disableDeepUnderground()
-    if undergroundConnection then
-        undergroundConnection:Disconnect()
-        undergroundConnection = nil
-    end
-
-    humanoid.HipHeight = originalHip
-    humanoid.PlatformStand = false
-
-    local root = getRoot()
-    if root then
-        root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-        root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-        root.CFrame = root.CFrame * CFrame.new(0, 80, 0)
-    end
-
-    for _, v in pairs(character:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = true
-            v.Massless = false
-        end
-    end
-    notify("⬆️ Naik", "Kembali ke permukaan...", 4)
-    task.wait(5)
-end
-
-local function teleportToAllFarmPlots()
-    local plots = findAllFarmPlots()
-    if #plots == 0 then
-        notify("❌ Error", "Tidak ada Farm Plot ditemukan!", 5)
-        return
-    end
-
-    notify("🚀 Mulai Crawl", "Menuju " .. #plots .. " Farm Plot...", 4)
-
-    for i, plotPos in ipairs(plots) do
-        adaptiveCrawlTo(plotPos)
-        notify("📍 Crawl Selesai", "Farm Plot " .. i .. "/" .. #plots, 1.5)
-        task.wait(1)
-    end
-
-    notify("✅ Selesai", "Telah mengunjungi semua Farm Plot", 5)
-end
-
-local function startFullSequence()
-    if isRunning then 
-        notify("⏳ Info", "Sequence sedang berjalan...", 3)
-        return 
-    end
-    
+-- ================== FULL SEQUENCE ==================
+local function performFullSequence()
+    if isRunning then return end
     isRunning = true
-    PermanentNoclipEnabled = true
-    notify("🔄 SEQUENCE", "MEMULAI FULL AUTO FARM...", 5)
 
     enableDeepUnderground()
     task.wait(10)
 
     disableDeepUnderground()
+    task.wait(5)
 
-    teleportToAllFarmPlots()
+    local plots = findAllFarmPlots()
+    if #plots > 0 then
+        notify("🚀 Mulai Crawl", "Menuju " .. #plots .. " Farm Plot...", 4)
+        for i, plotPos in ipairs(plots) do
+            adaptiveCrawlTo(plotPos)
+            task.wait(1)
+        end
+    end
 
-    -- Kembali ke Generator Position
     local genPos = getGeneratorPosition()
     if genPos then
-        notify("🏠 Kembali", "Kembali ke Generator Position...", 3)
-        local backOffset = genPos + Vector3.new(0, 5, 12)  -- 12 studs ke belakang (bisa diubah)
+        local backOffset = genPos + Vector3.new(0, 5, 12)
+        notify("🏠 Kembali", "Kembali ke belakang Generator...", 3)
         adaptiveCrawlTo(backOffset)
-    elseif undergroundHomeCFrame then
-        adaptiveCrawlTo(undergroundHomeCFrame.Position)
     end
 
     disableDeepUnderground()
-
     isRunning = false
-    notify("🎉 SELESAI", "Full Sequence telah selesai!", 6)
+    notify("✅ Cycle Selesai", "Satu cycle farm selesai", 4)
 end
 
-startFullSequence()
+local function toggleLoop()
+    isLooping = not isLooping
+    
+    if isLooping then
+        notify("🔄 LOOP AKTIF", "Auto Farm akan berulang terus...", 5)
+        loopConnection = RunService.Heartbeat:Connect(function()
+            if not isLooping then 
+                loopConnection:Disconnect()
+                return 
+            end
+            if not isRunning then
+                performFullSequence()
+            end
+        end)
+    else
+        if loopConnection then
+            loopConnection:Disconnect()
+            loopConnection = nil
+        end
+        notify("⛔ LOOP DIMATIKAN", "Auto Farm Loop telah dimatikan", 5)
+    end
+end
 
-player.CharacterAdded:Connect(function(newChar)
-    task.wait(0.5)
-    character = newChar
-    root = newChar:WaitForChild("HumanoidRootPart")
-    humanoid = newChar:WaitForChild("Humanoid")
-    originalHip = humanoid.HipHeight
-    undergroundHomeCFrame = nil
-    notify("🔄 Respawn", "Character baru terdeteksi", 3)
+-- ================== HOTKEY ==================
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    -- Alt + G = Toggle Loop
+    if input.KeyCode == Enum.KeyCode.G and (UserInputService:IsKeyDown(Enum.KeyCode.LeftAlt) or UserInputService:IsKeyDown(Enum.KeyCode.RightAlt)) then
+        toggleLoop()
+    end
 end)
 
-notify("🚀 Script Loaded", "Deep Underground + Farm Plot (Structures Path) + Generator Return", 6)
+-- ================== INIT ==================
+notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **Alt + G** untuk toggle looping", 8)
+
+-- Optional: Jalankan sekali di awal
+-- performFullSequence()
