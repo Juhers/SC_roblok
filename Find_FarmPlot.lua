@@ -256,7 +256,23 @@ local function performFullSequence()
     isRunning = true
 
     enableDeepUnderground()
-    task.wait(600)
+
+    -- ================== HITUNG MUNDUR 10 MENIT ==================
+    notify("⏳ UNDERGROUND", "Menunggu 10 menit untuk stabilisasi...", 5)
+    
+    local totalSeconds = 600  -- 10 menit
+    for i = totalSeconds, 1, -1 do
+        local minutes = math.floor(i / 60)
+        local seconds = i % 60
+        
+        if i % 30 == 0 or i <= 60 then  -- Update setiap 30 detik atau di menit akhir
+            notify("⏳ Hitung Mundur", 
+                string.format("Kembali ke permukaan dalam: %d menit %d detik", minutes, seconds), 
+                4)
+        end
+        
+        task.wait(1)
+    end
 
     disableDeepUnderground()
     task.wait(5)
