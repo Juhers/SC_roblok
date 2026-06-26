@@ -317,10 +317,10 @@ end
 -- ================== HOTKEY ==================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.F then
+    if input.KeyCode == Enum.KeyCode.K then
         toggleLoop()
     end
 end)
 
 -- ================== INIT ==================
-notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **F** untuk toggle looping", 8)
+notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **K** untuk toggle looping", 8)
