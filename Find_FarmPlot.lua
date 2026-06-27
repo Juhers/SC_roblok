@@ -408,32 +408,30 @@ local function performFullSequence()
     if isRunning then return end
     isRunning = true
 
+    -- Generator pertama
     local targetPos = getGeneratorPosition()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -4, 0)
-        backOffset = handleBloaterSafety(backOffset)
+        backOffset = handleBloaterSafety(backOffset) -- anti bloater
         adaptiveCrawlTo(backOffset, 1)
     end
     
     -- ================== HITUNG MUNDUR 10 MENIT ==================
     notify("⏳ UNDERGROUND", "Menunggu 10 menit untuk stabilisasi...", 5)
     
-    local totalSeconds = 600  -- 10 menit
+    local totalSeconds = 600
     for i = totalSeconds, 1, -1 do
         local minutes = math.floor(i / 60)
         local seconds = i % 60
-        if i % 30 == 0 or i <= 60 then  -- Update setiap 30 detik atau di menit akhir
-            if stopLoop then
-                break
-            end
+        if i % 30 == 0 or i <= 60 then
+            if stopLoop then break end
             notify("⏳ Hitung Mundur", 
-                string.format("Kembali ke permukaan dalam: %d menit %d detik", minutes, seconds), 
-                4)
+                string.format("Kembali ke permukaan dalam: %d menit %d detik", minutes, seconds), 4)
         end
         task.wait(1)
     end
 
-    -- Deteksi apakah masih ada Zombie
+    -- Deteksi Zombie
     local found, guiObject, count = isZombiesRemainingVisible()
     if found then
         notify("⚠️ Zombie Terdeteksi", 
@@ -441,9 +439,7 @@ local function performFullSequence()
         while found do
             task.wait(1)
             found, guiObject, count = isZombiesRemainingVisible()
-            if stopLoop then
-                break
-            end
+            if stopLoop then break end
         end
     end
 
@@ -453,6 +449,7 @@ local function performFullSequence()
     simulateKeyPress(Enum.KeyCode.T)
     stopLoop = false
 
+    -- Farm semua plot
     local plots = findAllFarmPlots()
     for i, plotPos in ipairs(plots) do
         local offset = plotPos + Vector3.new(0, -4, 0)
@@ -460,11 +457,12 @@ local function performFullSequence()
         task.wait(0.1)
     end
 
-    local targetPos = getGeneratorPosition()
+    -- Kembali ke Generator
+    targetPos = getGeneratorPosition()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -4, 0)
+        backOffset = handleBloaterSafety(backOffset)   -- Anti bloater
         adaptiveCrawlTo(backOffset, 1)
-        backOffset = handleBloaterSafety(backOffset)
     end
 
     task.wait(5)
