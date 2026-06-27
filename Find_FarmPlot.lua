@@ -163,24 +163,29 @@ local function StopCrawlNoclip()
     end
 end
 
+-- ================== ADAPTIVE CRAWL TO (DENGAN SPEED CONTROL) ==================
 local positionLockConnection = nil  -- Global lock
-
-local function adaptiveCrawlTo(targetPos)
+local function adaptiveCrawlTo(targetPos, speedMultiplier)
     local root = getRoot()
     if not root then return end
 
-    -- Matikan lock lama jika ada
+    -- Matikan lock lama
     if positionLockConnection then
         positionLockConnection:Disconnect()
         positionLockConnection = nil
     end
 
+    -- Default speed multiplier = 1.0
+    speedMultiplier = speedMultiplier or 1.0
+
     StartCrawlNoclip()
     notify("🛡️ Noclip", "Noclip AKTIF - Sedang Crawling...", 2)
 
-    local finalTarget = targetPos
-    local BURST_SPEED = 160
-    local SLOW_SPEED = 8
+    local finalTarget = targetPos + Vector3.new(0, -5, 0)
+    
+    -- ================== PENGATUR KECEPATAN ==================
+    local BURST_SPEED = 160 * speedMultiplier
+    local SLOW_SPEED  = 8 * speedMultiplier
     local CLEARANCE_COOLDOWN = 0.7  
     local SLOW_ZONE_DURATION = 0.4
 
@@ -235,7 +240,7 @@ local function adaptiveCrawlTo(targetPos)
         currentRoot.CFrame = CFrame.new(nextPos)
     end
 
-    -- ================== LOCK POSISI PERMANEN ==================
+    -- ================== KUNCI POSISI PERMANEN ==================
     task.wait(0.4)
     
     local finalRoot = getRoot()
@@ -244,17 +249,16 @@ local function adaptiveCrawlTo(targetPos)
         finalRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
 
-        -- Lock permanen
         positionLockConnection = RunService.Heartbeat:Connect(function()
             local r = getRoot()
             if r and r.Parent then
                 r.CFrame = CFrame.new(finalTarget)
-                r.AssemblyLinearVelocity = Vector3.new(0, -8, 0)   -- sedikit ke bawah agar tetap nempel
+                r.AssemblyLinearVelocity = Vector3.new(0, -8, 0)
                 r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
         end)
 
-        print("🔒 Posisi berhasil dikunci permanen")
+        print("🔒 Posisi dikunci permanen")
     end
 
     StopCrawlNoclip()
@@ -351,7 +355,7 @@ local function performFullSequence()
     local targetPos = getGeneratorPosition()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -6, 0)
-        adaptiveCrawlTo(backOffset)
+        adaptiveCrawlTo(backOffset, 1)
     end
     
     -- ================== HITUNG MUNDUR 10 MENIT ==================
@@ -397,7 +401,7 @@ local function performFullSequence()
     local plots = findAllFarmPlots()
     for i, plotPos in ipairs(plots) do
         local offset = plotPos + Vector3.new(0, -6, 0)
-        adaptiveCrawlTo(offset)
+        adaptiveCrawlTo(offset, 2)
         task.wait(0.1)
     end
 
