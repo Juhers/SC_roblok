@@ -1,25 +1,71 @@
+-- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot + Looping
+-- Toggle Loop: Tekan F
+
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
+local root = character:WaitForChild("HumanoidRootPart")
 local humanoid = character:WaitForChild("Humanoid")
+local playerGui = player:WaitForChild("PlayerGui", 10)
 
+local isRunning = false
+local isLooping = false
+local loopConnection = nil
 local undergroundConnection = nil
 local originalHip = humanoid.HipHeight
-local targetPosition = nil
-local isMoving = false
+local undergroundHomeCFrame = nil
 
-local cachedGeneratorPos = nil
-
-local function getRoot()
-    return character and character:FindFirstChild("HumanoidRootPart") or nil
+-- ================== NOTIFIKASI ==================
+local function notify(title, text, duration)
+    duration = duration or 4
+    pcall(function()
+        StarterGui:SetCore("SendNotification", {Title = title; Text = text; Duration = duration;})
+    end)
 end
 
--- ================== AMBIL POSISI GENERATOR ==================
+local function getRoot()
+    local char = player.Character
+    if not char then return nil end
+    return char:FindFirstChild("HumanoidRootPart")
+end
+
+-- ================== DETEKSI FARM PLOT & GENERATOR ==================
+local function findAllFarmPlots()
+    local plots = {}
+    local Structures = workspace:FindFirstChild("Structures")
+    if Structures then
+        for _, obj in ipairs(Structures:GetChildren()) do
+            if obj.Name == "Farm Plot" or obj.Name == "FarmPlot" then
+                local mesh = obj:FindFirstChild("Mesh") or obj:FindFirstChildWhichIsA("BasePart")
+                if mesh then
+                    table.insert(plots, mesh:GetPivot().Position)
+                else
+                    table.insert(plots, obj:GetPivot().Position)
+                end
+            end
+        end
+    end
+
+    if #plots == 0 then
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj.Name == "Farm Plot" or (obj.Parent and obj.Parent.Name == "Farm Plot") then
+                local part = obj:IsA("BasePart") and obj or obj:FindFirstChildWhichIsA("BasePart")
+                if part then
+                    table.insert(plots, part:GetPivot().Position)
+                end
+            end
+        end
+    end
+    return plots
+end
+
+local cachedGeneratorPos = nil
 local function getGeneratorPosition()
     if cachedGeneratorPos then return cachedGeneratorPos end
-    
     local Structures = workspace:FindFirstChild("Structures")
     if Structures then
         for _, obj in ipairs(Structures:GetChildren()) do
@@ -32,7 +78,6 @@ local function getGeneratorPosition()
             end
         end
     end
-    
     local gen = workspace:FindFirstChild("Generator", true)
     if gen then
         cachedGeneratorPos = gen:GetPivot().Position
@@ -41,60 +86,336 @@ local function getGeneratorPosition()
     return nil
 end
 
--- ================== FIND PATH (GERAK SMOOTH) ==================
-local function findPath(PosX, PosY, PosZ)
+-- ================== UNDERGROUND FUNCTIONS ==================
+local function enableDeepUnderground()
     local root = getRoot()
-    if not root or not humanoid then return end
+    if not root then return end
 
-    if not originalHip then
-        originalHip = humanoid.HipHeight
-    end
-
-    targetPosition = Vector3.new(PosX, PosY, PosZ)
-    isMoving = true
-
-    humanoid.HipHeight = -300
+    undergroundHomeCFrame = root.CFrame
+    originalHip = humanoid.HipHeight
+    humanoid.HipHeight = -320
     humanoid.PlatformStand = true
-    humanoid.AutoRotate = false
 
-    if undergroundConnection then
-        undergroundConnection:Disconnect()
-    end
-
-    undergroundConnection = RunService.Heartbeat:Connect(function(dt)
-        local root = getRoot()
-        if not root or not targetPosition or not isMoving then return end
-
-        local currentPos = root.Position
-        local newPos = currentPos:Lerp(targetPosition, 10 * dt)   -- kecepatan gerak
-
-        root.CFrame = CFrame.new(newPos.X, newPos.Y, newPos.Z) * 
-                     CFrame.Angles(0, root.CFrame.Rotation.Y, 0)
-
-        root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-        root.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-
-        -- Gerakan horizontal (WASD)
-        local moveDir = humanoid.MoveDirection
-        if moveDir.Magnitude > 0.1 then
-            local horizontalVel = moveDir * 45
-            root.AssemblyLinearVelocity = Vector3.new(horizontalVel.X, root.AssemblyLinearVelocity.Y, horizontalVel.Z)
-        end
-
-        -- Cek apakah sudah sampai
-        if (newPos - targetPosition).Magnitude < 2 then
-            undergroundConnection:Disconnect()
-            undergroundConnection = nil
-            isMoving = false
-
-            humanoid.HipHeight = originalHip or 2
-            humanoid.PlatformStand = false
-            humanoid.AutoRotate = true
-
-            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            print("✅ Sampai di tujuan!")
-        end
+    if undergroundConnection then undergroundConnection:Disconnect() end
+    
+    undergroundConnection = RunService.Heartbeat:Connect(function()
+        local currentRoot = getRoot()
+        if not currentRoot then return end
+        local currentY = currentRoot.Position.Y
+        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 7, undergroundHomeCFrame.Z)
+        currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
     end)
 
-    print("🚀 Menuju ke:", targetPosition)
+    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF", 5)
 end
+
+local function disableDeepUnderground()
+    if undergroundConnection then
+        undergroundConnection:Disconnect()
+        undergroundConnection = nil
+    end
+
+    humanoid.HipHeight = originalHip
+    humanoid.PlatformStand = false
+
+    local root = getRoot()
+    if root then
+        root.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        root.AssemblyAngularVelocity = Vector3.new(0,0,0)
+        root.CFrame = root.CFrame * CFrame.new(0, 100, 0)
+    end
+
+    for _, v in pairs(character:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = true
+            v.Massless = false
+        end
+    end
+    notify("⬆️ Naik", "Kembali ke permukaan...", 4)
+end
+
+-- ================== ADAPTIVE CRAWL TO (FIXED - Anti Tenggelam) ==================
+local crawlNoclipConnection = nil
+
+local function StartCrawlNoclip()
+    if crawlNoclipConnection then return end
+    crawlNoclipConnection = RunService.Stepped:Connect(function()
+        local char = player.Character
+        if not char then return end
+        for _, child in ipairs(char:GetDescendants()) do
+            if child:IsA("BasePart") then
+                child.CanCollide = false
+                child.Massless = true
+            end
+        end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+            hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        end
+    end)
+end
+
+local function StopCrawlNoclip()
+    if crawlNoclipConnection then
+        crawlNoclipConnection:Disconnect()
+        crawlNoclipConnection = nil
+    end
+end
+
+local function adaptiveCrawlTo(targetPos)
+    local root = getRoot()
+    if not root then return end
+
+    StartCrawlNoclip()
+    notify("🛡️ Noclip", "Noclip AKTIF - Sedang Crawling...", 2)
+
+    local finalTarget = targetPos + Vector3.new(0, -5, 0)  -- Naik 5 studs di atas target
+    local BURST_SPEED = 160
+    local SLOW_SPEED = 8
+    local CLEARANCE_COOLDOWN = 0.7  
+    local SLOW_ZONE_DURATION = 0.4
+
+    local lastWallDetectedTime = 0
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {player.Character}
+
+    while true do
+        local currentRoot = getRoot()
+        if not currentRoot or not currentRoot.Parent then break end
+
+        local deltaTime = RunService.Heartbeat:Wait()
+        local currentPos = currentRoot.Position
+        local remainingVector = finalTarget - currentPos
+        local totalDistance = remainingVector.Magnitude
+
+        -- Finish condition
+        if totalDistance <= 3.0 then
+            currentRoot.CFrame = CFrame.new(finalTarget)
+            currentRoot.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
+            currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            break
+        end
+
+        if totalDistance < 0.5 then break end
+
+        local direction = remainingVector.Unit
+
+        -- Raycast untuk deteksi obstacle
+        local rayResult = workspace:Raycast(currentPos, direction * 6, raycastParams)
+        if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
+            lastWallDetectedTime = os.clock()
+        end
+
+        -- Kecepatan
+        local currentAllowedSpeed = SLOW_SPEED
+        if os.clock() - lastWallDetectedTime >= CLEARANCE_COOLDOWN then
+            local serverTime = workspace:GetServerTimeNow()
+            local fraction = serverTime % 1.0
+            if fraction < (1.0 - SLOW_ZONE_DURATION) then
+                currentAllowedSpeed = BURST_SPEED
+            end
+        end
+
+        local frameTravel = math.min(currentAllowedSpeed * deltaTime, totalDistance)
+        local nextPos = currentPos + (direction * frameTravel)
+
+        -- Terapkan pergerakan
+        currentRoot.CFrame = CFrame.new(nextPos)
+    end
+
+    -- Final positioning & cleanup
+    task.wait(0.6)
+    local finalRoot = getRoot()
+    if finalRoot then
+        finalRoot.CFrame = CFrame.new(finalTarget)
+        finalRoot.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
+    end
+
+    StopCrawlNoclip()
+    notify("🛡️ Noclip", "Noclip DIMATIKAN", 2)
+end
+
+-- ================== FUNGSI SIMULASI TEKAN TOMBOL ==================
+local function simulateKeyPress(keyCode)
+    local VirtualInputManager = game:GetService("VirtualInputManager")
+    
+    -- Tekan tombol
+    VirtualInputManager:SendKeyEvent(true, keyCode, false, game)
+    task.wait(0.1)
+    -- Lepas tombol
+    VirtualInputManager:SendKeyEvent(false, keyCode, false, game)
+    
+    notify("⌨️ Simulate", "Tombol T ditekan", 2)
+end
+
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ================== FUNGSI DETEKSI ==================
+local function isZombiesRemainingVisible()
+    -- Cek PlayerGui
+    if playerGui then
+        for _, gui in ipairs(playerGui:GetDescendants()) do
+            if gui:IsA("TextLabel") or gui:IsA("TextButton") or gui:IsA("TextBox") then
+                local text = gui.Text
+                if text and (text:find("Zombies Remaining") or text:find("Enemies Remaining")) then
+                    
+                    local numberStr = text:match(":%s*(%d+)")
+                    local zombieCount = tonumber(numberStr) or 0
+                    
+                    print("✅ Ditemukan: " .. text .. " | Jumlah: " .. zombieCount)
+                    print("   Parent: " .. gui.Parent.Name .. " | Object: " .. gui.Name)
+                    
+                    if zombieCount > 0 then
+                        return true, gui, zombieCount
+                    else
+                        print("   (Zombies = 0, dianggap wave selesai)")
+                        return false, gui, 0
+                    end
+                end
+            end
+        end
+    end
+
+    -- Cek CoreGui
+    local coreGui = game:GetService("CoreGui")
+    for _, gui in ipairs(coreGui:GetDescendants()) do
+        if gui:IsA("TextLabel") or gui:IsA("TextButton") or gui:IsA("TextBox") then
+            local text = gui.Text
+            if text and (text:find("Zombies Remaining") or text:find("Enemies Remaining")) then
+                
+                local numberStr = text:match(":%s*(%d+)")
+                local zombieCount = tonumber(numberStr) or 0
+                
+                print("✅ Ditemukan di CoreGui: " .. text .. " | Jumlah: " .. zombieCount)
+                
+                if zombieCount > 0 then
+                    return true, gui, zombieCount
+                else
+                    print("   (Zombies = 0, dianggap wave selesai)")
+                    return false, gui, 0
+                end
+            end
+        end
+    end
+
+    print("❌ Tidak ditemukan teks 'Zombies Remaining'")
+    return false, nil, 0
+end
+
+local UserInputService = game:GetService("UserInputService")
+local stopLoop = false
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.KeyCode == Enum.KeyCode.H then
+        stopLoop = true
+        print("Loop dihentikan.")
+    end
+end)
+
+-- ================== FULL SEQUENCE ==================
+local function performFullSequence()
+    if isRunning then return end
+    isRunning = true
+
+    --enableDeepUnderground()
+    local targetPos = getGeneratorPosition()
+    if targetPos then
+        local backOffset = targetPos + Vector3.new(0, -6, 0)
+        adaptiveCrawlTo(backOffset)
+    end
+    
+    -- ================== HITUNG MUNDUR 10 MENIT ==================
+    notify("⏳ UNDERGROUND", "Menunggu 10 menit untuk stabilisasi...", 5)
+    
+    local totalSeconds = 600  -- 10 menit
+    for i = totalSeconds, 1, -1 do
+        local minutes = math.floor(i / 60)
+        local seconds = i % 60
+        
+        if i % 30 == 0 or i <= 60 then  -- Update setiap 30 detik atau di menit akhir
+            if stopLoop then
+                break
+            end
+            notify("⏳ Hitung Mundur", 
+                string.format("Kembali ke permukaan dalam: %d menit %d detik", minutes, seconds), 
+                4)
+        end
+        
+        task.wait(1)
+    end
+
+    -- Deteksi apakah masih ada Zombie
+    local found, guiObject, count = isZombiesRemainingVisible()
+    if found then
+        notify("⚠️ Zombie Terdeteksi", 
+            string.format("Masih ada %d Zombie Remaining! Menunggu...", count), 5)
+        while found do
+            task.wait(1)
+            found, guiObject, count = isZombiesRemainingVisible()
+            if stopLoop then
+                break
+            end
+        end
+    end
+
+    task.wait(3)
+
+    -- Tekan T Pertama
+    simulateKeyPress(Enum.KeyCode.T)
+    stopLoop = false
+
+    local plots = findAllFarmPlots()
+    for i, plotPos in ipairs(plots) do
+        adaptiveCrawlTo(plotPos)
+        task.wait(0.1)
+    end
+
+    task.wait(2)
+
+    -- Tekan T Kedua
+    simulateKeyPress(Enum.KeyCode.T)
+
+    isRunning = false
+    notify("✅ Cycle Selesai", "Satu cycle farm selesai", 4)
+end
+
+local function toggleLoop()
+    isLooping = not isLooping
+    
+    if isLooping then
+        notify("🔄 LOOP AKTIF", "Auto Farm Loop ON\nTekan J untuk matikan", 6)
+        loopConnection = RunService.Heartbeat:Connect(function()
+            if not isLooping then 
+                loopConnection:Disconnect()
+                return 
+            end
+            if not isRunning then
+                performFullSequence()
+            end
+        end)
+    else
+        if loopConnection then
+            loopConnection:Disconnect()
+            loopConnection = nil
+        end
+        notify("⛔ LOOP DIMATIKAN", "Auto Farm Loop OFF", 5)
+    end
+end
+
+-- ================== HOTKEY ==================
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.G then
+        toggleLoop()
+    end
+end)
+
+-- ================== INIT ==================
+notify("🚀 Script Loaded", "Deep Underground + Auto Farm Loop\nTekan **J** untuk toggle looping", 8)

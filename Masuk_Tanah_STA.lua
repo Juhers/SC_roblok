@@ -100,7 +100,7 @@ print("🚀 Super Deep Underground - Anti Drift Total Loaded!")
 print("Tekan F untuk masuk sangat dalam (tanpa geser)")
 
 
--- loadstring(game:HttpGet("https://raw.githubusercontent.com/Juhers/SC_roblok/refs/heads/main/deteksi_object_npc.lua"))()
+-- loadstring(game:HttpGet("https://raw.githubusercontent.com/Juhers/SC_roblok/refs/heads/main/TP_bawah tanah.lua"))()
 
 -- Full Path  Farm Plot : Workspace.Structures.Farm Plot.Mesh
 -- Full Path  Farm Plot : Workspace.Structures.Generator.MainPart
