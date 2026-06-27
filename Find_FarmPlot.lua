@@ -101,7 +101,7 @@ local function enableDeepUnderground()
         local currentRoot = getRoot()
         if not currentRoot then return end
         local currentY = currentRoot.Position.Y
-        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 3, undergroundHomeCFrame.Z)
+        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 6, undergroundHomeCFrame.Z)
         currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
     end)
 
@@ -347,7 +347,7 @@ end
 -- ================== HOTKEY ==================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.G then
+    if input.KeyCode == Enum.KeyCode.J then
         toggleLoop()
     end
 end)
