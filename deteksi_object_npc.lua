@@ -4,6 +4,7 @@ local Workspace = game:GetService("Workspace")
 local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
+local mouse = player:GetMouse()
 
 local function notify(title, text, duration)
     duration = duration or 5
@@ -12,88 +13,80 @@ local function notify(title, text, duration)
     end)
 end
 
-local function getRoot()
-    if not player.Character then return nil end
-    return player.Character:FindFirstChild("HumanoidRootPart")
+local function copyToClipboard(text)
+    pcall(function()
+        setclipboard(text)
+    end)
 end
 
--- ================== DETEKSI TANDA SERU BLOATER (VERSI AGRESIF) ==================
-local function isBloaterAboutToExplode()
-    local closestBloater = nil
-    local closestDist = math.huge
-    local hasWarning = false
+-- ================== DETAILED CHECK FOR TANDA SERU ==================
+local function checkBloaterExclamation()
+    if not mouse.Target then
+        notify("❌ No Target", "Arahkan mouse ke Bloater", 3)
+        return
+    end
 
-    -- 1. Cari semua BillboardGui di workspace
-    for _, gui in ipairs(Workspace:GetDescendants()) do
-        if gui:IsA("BillboardGui") or gui:IsA("SurfaceGui") then
-            for _, child in ipairs(gui:GetChildren()) do
-                if (child:IsA("TextLabel") or child:IsA("ImageLabel")) and 
-                   (child.Text == "!" or child.Text == "！" or child.Name:lower():find("excl") or child.Name:lower():find("alert")) then
+    local target = mouse.Target
+    local model = target:FindFirstAncestorWhichIsA("Model") or target.Parent
+
+    local result = "=== BLOATER EXCLAMATION CHECK ===\n"
+    result = result .. "Model: " .. model.Name .. "\nTime: " .. os.date("%H:%M:%S") .. "\n\n"
+
+    local foundExclamation = false
+    local guiLocations = {}
+
+    -- Cek semua descendant secara detail
+    for _, obj in ipairs(model:GetDescendants()) do
+        if obj:IsA("BillboardGui") or obj:IsA("SurfaceGui") then
+            table.insert(guiLocations, obj)
+            result = result .. "🎯 GUI Found: " .. obj.Name .. " (Parent: " .. obj.Parent.Name .. ")\n"
+            
+            for _, child in ipairs(obj:GetChildren()) do
+                if child:IsA("TextLabel") or child:IsA("ImageLabel") then
+                    local txt = child.Text or ""
+                    result = result .. "   → " .. child.Name .. " | Text: '" .. txt .. "' | Visible: " .. tostring(child.Visible) .. "\n"
                     
-                    -- Cari parent terdekat yang mirip Bloater
-                    local parentModel = gui.Parent
-                    while parentModel and not parentModel:FindFirstChild("MobAI") and not parentModel.Name:lower():find("bloater") do
-                        parentModel = parentModel.Parent
-                    end
-                    
-                    if parentModel then
-                        local root = parentModel:FindFirstChild("HumanoidRootPart") or parentModel:FindFirstChild("Torso")
-                        if root then
-                            local playerRoot = getRoot()
-                            if playerRoot then
-                                local dist = (root.Position - playerRoot.Position).Magnitude
-                                
-                                if dist < closestDist then
-                                    closestDist = dist
-                                    closestBloater = parentModel
-                                    hasWarning = true
-                                end
-                            end
-                        end
+                    if txt == "!" or txt == "！" or child.Name:lower():find("excl") then
+                        foundExclamation = true
+                        result = result .. "   💥 === TANDA SERU DITEMUKAN DI SINI ===\n"
                     end
                 end
             end
         end
     end
 
-    -- Fallback: Cari Bloater biasa
-    if not hasWarning then
-        for _, obj in ipairs(Workspace:GetDescendants()) do
-            local nl = obj.Name:lower()
-            if nl:find("bloater") or (obj:FindFirstChild("MobAI") and obj:FindFirstChild("BaseStats")) then
-                local root = obj:FindFirstChild("HumanoidRootPart") or obj:FindFirstChild("Torso")
-                if root then
-                    local dist = (root.Position - (getRoot() or Vector3.new()).Position).Magnitude
-                    if dist < closestDist then
-                        closestDist = dist
-                        closestBloater = obj
-                    end
-                end
-            end
+    if #guiLocations == 0 then
+        result = result .. "❌ Tidak ada BillboardGui / SurfaceGui di model ini\n"
+    end
+
+    -- Cek Head dan Torso khusus (karena tanda seru biasanya di atas badan)
+    local head = model:FindFirstChild("Head")
+    if head then
+        result = result .. "\nHead Children:\n"
+        for _, c in ipairs(head:GetChildren()) do
+            result = result .. "   • " .. c.Name .. " (" .. c.ClassName .. ")\n"
         end
     end
 
-    if closestBloater then
-        print(string.format("🧟 Bloater terdeteksi | Jarak: %.1f | Warning: %s", closestDist, hasWarning and "✅" or "❌"))
-        return true, {Distance = closestDist, HasExclamation = hasWarning, Object = closestBloater}, closestDist
-    end
+    result = result .. "\nStatus: " .. (foundExclamation and "TANDA SERU TERDETEKSI" or "Tidak ditemukan tanda seru") .. "\n"
 
-    return false, nil, 0
+    -- Output
+    print(result)
+    copyToClipboard(result)
+    
+    if foundExclamation then
+        notify("💥 SUCCESS!", "Tanda Seru terdeteksi!", 6)
+    else
+        notify("⚠️ No Exclamation", "Tanda seru belum terdeteksi\nHasil sudah dicopy", 5)
+    end
 end
 
--- ================== HOTKEY ==================
+-- Hotkey
 UserInputService.InputBegan:Connect(function(input, gp)
     if gp then return end
     if input.KeyCode == Enum.KeyCode.B then
-        local danger, info, dist = isBloaterAboutToExplode()
-        if danger and info.HasExclamation then
-            notify("💥 BLOATER ALERT!", "Tanda Seru terdeteksi!\nJarak: " .. math.floor(dist), 6)
-        elseif danger then
-            notify("🧟 Bloater Ditemukan", "Jarak: " .. math.floor(dist) .. " studs (tanpa tanda seru)", 4)
-        else
-            notify("❌ Tidak Ditemukan", "Tidak ada Bloater aktif", 3)
-        end
+        checkBloaterExclamation()
     end
 end)
 
-notify("🔍 Bloater Detector", "Tekan **B** saat Bloater mau meledak", 8)
+notify("🔍 Detailed Exclamation Checker", "Arahkan mouse ke Bloater → Tekan **B**", 10)
