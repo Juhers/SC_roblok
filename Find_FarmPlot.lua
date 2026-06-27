@@ -116,18 +116,16 @@ local function StopCrawlNoclip()
 end
 
 -- ================== ADAPTIVE CRAWL TO (DENGAN SPEED CONTROL) ==================
-local positionLockConnection = nil  -- Global lock
+local positionLockConnection = nil
 local function adaptiveCrawlTo(targetPos, speedMultiplier)
     local root = getRoot()
     if not root then return end
 
-    -- Matikan lock lama
     if positionLockConnection then
         positionLockConnection:Disconnect()
         positionLockConnection = nil
     end
 
-    -- Default speed multiplier = 1.0
     speedMultiplier = speedMultiplier or 1.0
 
     StartCrawlNoclip()
@@ -135,7 +133,6 @@ local function adaptiveCrawlTo(targetPos, speedMultiplier)
 
     local finalTarget = targetPos + Vector3.new(0, -5, 0)
     
-    -- ================== PENGATUR KECEPATAN ==================
     local BURST_SPEED = 160 * speedMultiplier
     local SLOW_SPEED  = 8 * speedMultiplier
     local CLEARANCE_COOLDOWN = 0.7  
@@ -159,8 +156,6 @@ local function adaptiveCrawlTo(targetPos, speedMultiplier)
 
         if totalDistance <= 3.0 then
             currentRoot.CFrame = CFrame.new(finalTarget)
-            currentRoot.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
-            currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             isFinished = true
             break
         end
@@ -190,27 +185,31 @@ local function adaptiveCrawlTo(targetPos, speedMultiplier)
         local nextPos = currentPos + (direction * frameTravel)
 
         currentRoot.CFrame = CFrame.new(nextPos)
+        
+        -- Penting: Update ke server agar terlihat di akun lain
+        currentRoot.Velocity = Vector3.new(0,0,0)
     end
 
-    -- ================== KUNCI POSISI PERMANEN ==================
     task.wait(0.4)
-    
+
     local finalRoot = getRoot()
     if finalRoot and isFinished then
         finalRoot.CFrame = CFrame.new(finalTarget)
         finalRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
 
+        -- Lock permanen
         positionLockConnection = RunService.Heartbeat:Connect(function()
             local r = getRoot()
             if r and r.Parent then
                 r.CFrame = CFrame.new(finalTarget)
                 r.AssemblyLinearVelocity = Vector3.new(0, -8, 0)
                 r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                
+                -- Update ke server setiap frame
+                r.Velocity = Vector3.new(0,0,0)
             end
         end)
-
-        print("🔒 Posisi dikunci permanen")
     end
 
     StopCrawlNoclip()
