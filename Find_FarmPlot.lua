@@ -280,13 +280,17 @@ local function performFullSequence()
     -- Tekan T Pertama
     simulateKeyPress(Enum.KeyCode.T)
 
+    stopLoop = false
+
     local plots = findAllFarmPlots()
-    if #plots > 0 then
-        notify("🚀 Mulai Crawl", "Menuju " .. #plots .. " Farm Plot...", 4)
-        for i, plotPos in ipairs(plots) do
-            adaptiveCrawlTo(plotPos)
-            task.wait(1)
+
+    for i, plotPos in ipairs(plots) do
+        if stopLoop then
+            break
         end
+
+        adaptiveCrawlTo(plotPos)
+        task.wait(1)
     end
 
     local genPos = getGeneratorPosition()
@@ -335,6 +339,17 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.J then
         toggleLoop()
+    end
+end)
+
+local UserInputService = game:GetService("UserInputService")
+local stopLoop = false
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.KeyCode == Enum.KeyCode.H then
+        stopLoop = true
+        print("Loop dihentikan.")
     end
 end)
 
