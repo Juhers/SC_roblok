@@ -301,6 +301,10 @@ local function performFullSequence()
     if isRunning then return end
     isRunning = true
 
+    task.wait(2)
+    -- Tekan T Kedua
+    simulateKeyPress(Enum.KeyCode.T)
+
     --enableDeepUnderground()
     local targetPos = getGeneratorPosition()
     if targetPos then
@@ -352,11 +356,6 @@ local function performFullSequence()
         adaptiveCrawlTo(offset, 2)
         task.wait(0.1)
     end
-
-    task.wait(2)
-
-    -- Tekan T Kedua
-    simulateKeyPress(Enum.KeyCode.T)
 
     isRunning = false
     notify("✅ Cycle Selesai", "Satu cycle farm selesai", 4)
