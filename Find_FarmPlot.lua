@@ -396,6 +396,7 @@ local function performFullSequence()
 
     local plots = findAllFarmPlots()
     for i, plotPos in ipairs(plots) do
+        local offset = plotPos + Vector3.new(0, -6, 0)
         adaptiveCrawlTo(plotPos)
         task.wait(0.1)
     end
