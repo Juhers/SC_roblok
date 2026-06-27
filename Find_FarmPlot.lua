@@ -300,16 +300,11 @@ local function performFullSequence()
     if isRunning then return end
     isRunning = true
 
-    --enableDeepUnderground()
     local targetPos = getGeneratorPosition()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -6, 0)
         adaptiveCrawlTo(backOffset, 1)
     end
-
-    task.wait(2)
-    -- Tekan T Kedua
-    simulateKeyPress(Enum.KeyCode.T)
     
     -- ================== HITUNG MUNDUR 10 MENIT ==================
     notify("⏳ UNDERGROUND", "Menunggu 10 menit untuk stabilisasi...", 5)
@@ -355,6 +350,16 @@ local function performFullSequence()
         adaptiveCrawlTo(offset, 2)
         task.wait(0.1)
     end
+
+    local targetPos = getGeneratorPosition()
+    if targetPos then
+        local backOffset = targetPos + Vector3.new(0, -6, 0)
+        adaptiveCrawlTo(backOffset, 1)
+    end
+
+    task.wait(5)
+    -- Tekan T Kedua
+    simulateKeyPress(Enum.KeyCode.T)
 
     isRunning = false
     notify("✅ Cycle Selesai", "Satu cycle farm selesai", 4)
