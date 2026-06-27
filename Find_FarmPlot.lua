@@ -302,7 +302,7 @@ local function performFullSequence()
 
     local targetPos = getGeneratorPosition()
     if targetPos then
-        local backOffset = targetPos + Vector3.new(0, -6, 0)
+        local backOffset = targetPos + Vector3.new(0, -4, 0)
         adaptiveCrawlTo(backOffset, 1)
     end
     
@@ -353,7 +353,7 @@ local function performFullSequence()
 
     local targetPos = getGeneratorPosition()
     if targetPos then
-        local backOffset = targetPos + Vector3.new(0, -6, 0)
+        local backOffset = targetPos + Vector3.new(0, -4, 0)
         adaptiveCrawlTo(backOffset, 1)
     end
 
