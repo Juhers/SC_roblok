@@ -393,8 +393,9 @@ local function startBloaterMonitor()
                 isInEmergencyDive = true
                 emergencyOriginalPos = root.Position
                 
-                local emergencyPos = root.Position + Vector3.new(0, -8, 0)
+                local emergencyPos = root.Position + Vector3.new(0, -12, 0)
                 adaptiveCrawlTo(emergencyPos, 0.7)
+                task.wait(3)
             end
         else
             -- Bloater sudah aman
