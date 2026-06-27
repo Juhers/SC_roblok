@@ -250,6 +250,17 @@ local function simulateKeyPress(keyCode)
     notify("⌨️ Simulate", "Tombol T ditekan", 2)
 end
 
+local UserInputService = game:GetService("UserInputService")
+local stopLoop = false
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+
+    if input.KeyCode == Enum.KeyCode.H then
+        stopLoop = true
+        print("Loop dihentikan.")
+    end
+end)
+
 -- ================== FULL SEQUENCE ==================
 local function performFullSequence()
     if isRunning then return end
@@ -266,6 +277,9 @@ local function performFullSequence()
         local seconds = i % 60
         
         if i % 30 == 0 or i <= 60 then  -- Update setiap 30 detik atau di menit akhir
+            if stopLoop then
+                break
+            end
             notify("⏳ Hitung Mundur", 
                 string.format("Kembali ke permukaan dalam: %d menit %d detik", minutes, seconds), 
                 4)
@@ -285,10 +299,6 @@ local function performFullSequence()
     local plots = findAllFarmPlots()
 
     for i, plotPos in ipairs(plots) do
-        if stopLoop then
-            break
-        end
-
         adaptiveCrawlTo(plotPos)
         task.wait(1)
     end
@@ -339,17 +349,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.J then
         toggleLoop()
-    end
-end)
-
-local UserInputService = game:GetService("UserInputService")
-local stopLoop = false
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-
-    if input.KeyCode == Enum.KeyCode.H then
-        stopLoop = true
-        print("Loop dihentikan.")
     end
 end)
 
