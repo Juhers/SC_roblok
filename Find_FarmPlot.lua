@@ -401,8 +401,6 @@ local function handleBloaterSafety(currentTargetPos)
     return returnPos
 end
 
--- selama isBloaterAboutToExplode() true maka  adaptiveCrawlTo() turun posisi Y -6 kemudian naik kembali + 6 ketika sudah tidak terdeteksi
-
 -- ================== FULL SEQUENCE ==================
 local function performFullSequence()
     if isRunning then return end
