@@ -313,7 +313,7 @@ local function performFullSequence()
     -- Tekan T Kedua
     simulateKeyPress(Enum.KeyCode.T)
 
-    task.wait(5)
+    task.wait(2)
 
     -- Keyboard Menekan T
 
