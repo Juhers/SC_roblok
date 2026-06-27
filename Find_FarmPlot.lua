@@ -10,6 +10,7 @@ local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
 local root = character:WaitForChild("HumanoidRootPart")
 local humanoid = character:WaitForChild("Humanoid")
+local playerGui = player:WaitForChild("PlayerGui", 10)
 
 local isRunning = false
 local isLooping = false
@@ -250,6 +251,65 @@ local function simulateKeyPress(keyCode)
     notify("⌨️ Simulate", "Tombol T ditekan", 2)
 end
 
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- ================== FUNGSI DETEKSI ==================
+local function isZombiesRemainingVisible()
+    -- Cek PlayerGui
+    if playerGui then
+        for _, gui in ipairs(playerGui:GetDescendants()) do
+            if gui:IsA("TextLabel") or gui:IsA("TextButton") or gui:IsA("TextBox") then
+                local text = gui.Text
+                if text and (text:find("Zombies Remaining") or text:find("Enemies Remaining")) then
+                    
+                    local numberStr = text:match(":%s*(%d+)")
+                    local zombieCount = tonumber(numberStr) or 0
+                    
+                    print("✅ Ditemukan: " .. text .. " | Jumlah: " .. zombieCount)
+                    print("   Parent: " .. gui.Parent.Name .. " | Object: " .. gui.Name)
+                    
+                    if zombieCount > 0 then
+                        return true, gui, zombieCount
+                    else
+                        print("   (Zombies = 0, dianggap wave selesai)")
+                        return false, gui, 0
+                    end
+                end
+            end
+        end
+    end
+
+    -- Cek CoreGui
+    local coreGui = game:GetService("CoreGui")
+    for _, gui in ipairs(coreGui:GetDescendants()) do
+        if gui:IsA("TextLabel") or gui:IsA("TextButton") or gui:IsA("TextBox") then
+            local text = gui.Text
+            if text and (text:find("Zombies Remaining") or text:find("Enemies Remaining")) then
+                
+                local numberStr = text:match(":%s*(%d+)")
+                local zombieCount = tonumber(numberStr) or 0
+                
+                print("✅ Ditemukan di CoreGui: " .. text .. " | Jumlah: " .. zombieCount)
+                
+                if zombieCount > 0 then
+                    return true, gui, zombieCount
+                else
+                    print("   (Zombies = 0, dianggap wave selesai)")
+                    return false, gui, 0
+                end
+            end
+        end
+    end
+
+    print("❌ Tidak ditemukan teks 'Zombies Remaining'")
+    return false, nil, 0
+end
+
+
+
 local UserInputService = game:GetService("UserInputService")
 local stopLoop = false
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -286,6 +346,20 @@ local function performFullSequence()
         end
         
         task.wait(1)
+    end
+
+    -- Deteksi apakah masih ada Zombie
+    local found, guiObject, count = isZombiesRemainingVisible()
+    if found then
+        notify("⚠️ Zombie Terdeteksi", 
+            string.format("Masih ada %d Zombie Remaining! Menunggu...", count), 5)
+        while found do
+            task.wait(1)
+            found, guiObject, count = isZombiesRemainingVisible()
+            if stopLoop then
+                break
+            end
+        end
     end
 
     disableDeepUnderground()
