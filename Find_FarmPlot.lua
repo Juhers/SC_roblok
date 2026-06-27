@@ -395,7 +395,7 @@ local function startBloaterMonitor()
                 
                 local emergencyPos = root.Position + Vector3.new(0, -12, 0)
                 adaptiveCrawlTo(emergencyPos, 0.7)
-                task.wait(3)
+                task.wait(5)
             end
         else
             -- Bloater sudah aman
