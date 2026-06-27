@@ -86,54 +86,6 @@ local function getGeneratorPosition()
     return nil
 end
 
--- ================== UNDERGROUND FUNCTIONS ==================
-local function enableDeepUnderground()
-    local root = getRoot()
-    if not root then return end
-
-    undergroundHomeCFrame = root.CFrame
-    originalHip = humanoid.HipHeight
-    humanoid.HipHeight = -320
-    humanoid.PlatformStand = true
-
-    if undergroundConnection then undergroundConnection:Disconnect() end
-    
-    undergroundConnection = RunService.Heartbeat:Connect(function()
-        local currentRoot = getRoot()
-        if not currentRoot then return end
-        local currentY = currentRoot.Position.Y
-        currentRoot.CFrame = CFrame.new(undergroundHomeCFrame.X, currentY - 7, undergroundHomeCFrame.Z)
-        currentRoot.AssemblyLinearVelocity = Vector3.new(0, -280, 0)
-    end)
-
-    notify("🌍 Underground", "SUPER DEEP UNDERGROUND AKTIF", 5)
-end
-
-local function disableDeepUnderground()
-    if undergroundConnection then
-        undergroundConnection:Disconnect()
-        undergroundConnection = nil
-    end
-
-    humanoid.HipHeight = originalHip
-    humanoid.PlatformStand = false
-
-    local root = getRoot()
-    if root then
-        root.AssemblyLinearVelocity = Vector3.new(0,0,0)
-        root.AssemblyAngularVelocity = Vector3.new(0,0,0)
-        root.CFrame = root.CFrame * CFrame.new(0, 100, 0)
-    end
-
-    for _, v in pairs(character:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.CanCollide = true
-            v.Massless = false
-        end
-    end
-    notify("⬆️ Naik", "Kembali ke permukaan...", 4)
-end
-
 -- ================== ADAPTIVE CRAWL TO (FIXED - Anti Tenggelam) ==================
 local crawlNoclipConnection = nil
 
@@ -278,12 +230,10 @@ local function simulateKeyPress(keyCode)
     notify("⌨️ Simulate", "Tombol T ditekan", 2)
 end
 
-
+-- ================== FUNGSI DETEKSI ==================
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-
--- ================== FUNGSI DETEKSI ==================
 local function isZombiesRemainingVisible()
     -- Cek PlayerGui
     if playerGui then
@@ -365,7 +315,6 @@ local function performFullSequence()
     for i = totalSeconds, 1, -1 do
         local minutes = math.floor(i / 60)
         local seconds = i % 60
-        
         if i % 30 == 0 or i <= 60 then  -- Update setiap 30 detik atau di menit akhir
             if stopLoop then
                 break
@@ -374,7 +323,6 @@ local function performFullSequence()
                 string.format("Kembali ke permukaan dalam: %d menit %d detik", minutes, seconds), 
                 4)
         end
-        
         task.wait(1)
     end
 
