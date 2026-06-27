@@ -387,25 +387,48 @@ local function startBloaterMonitor()
 
         if isBloaterAboutToExplode() then
             if not isInEmergencyDive then
-                -- Mulai menghindar
-                notify("💥 BLOATER DARURAT!", "Menghindar ke bawah secara otomatis...", 3)
+                notify("💥 BLOATER DARURAT!", "Menghindar ke bawah selama 5 detik...", 3)
                 
                 isInEmergencyDive = true
                 emergencyOriginalPos = root.Position
                 
-                local emergencyPos = root.Position + Vector3.new(0, -12, 0)
-                adaptiveCrawlTo(emergencyPos, 0.7)
-                task.wait(5)
-            end
-        else
-            -- Bloater sudah aman
-            if isInEmergencyDive then
-                notify("✅ BLOATER AMAN", "Kembali ke posisi semula...", 3)
-                
-                if emergencyOriginalPos then
-                    adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+                -- Matikan lock sementara agar bisa gerak
+                if positionLockConnection then
+                    positionLockConnection:Disconnect()
+                    positionLockConnection = nil
                 end
                 
+                local emergencyPos = root.Position + Vector3.new(0, -12, 0)
+                adaptiveCrawlTo(emergencyPos, 0.7)
+                
+                -- Tunggu 5 detik di bawah (ini yang kamu minta)
+                task.spawn(function()
+                    task.wait(5)
+                    
+                    if isInEmergencyDive and not isBloaterAboutToExplode() then
+                        notify("✅ BLOATER AMAN", "Kembali ke posisi semula...", 3)
+                        
+                        if emergencyOriginalPos then
+                            if positionLockConnection then
+                                positionLockConnection:Disconnect()
+                                positionLockConnection = nil
+                            end
+                            adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+                        end
+                        
+                        isInEmergencyDive = false
+                        emergencyOriginalPos = nil
+                    end
+                end)
+            end
+        else
+            -- Jika bloater sudah tidak ada tapi masih dalam mode dive (jarang terjadi)
+            if isInEmergencyDive and emergencyOriginalPos then
+                if positionLockConnection then
+                    positionLockConnection:Disconnect()
+                    positionLockConnection = nil
+                end
+                adaptiveCrawlTo(emergencyOriginalPos, 1.0)
                 isInEmergencyDive = false
                 emergencyOriginalPos = nil
             end
