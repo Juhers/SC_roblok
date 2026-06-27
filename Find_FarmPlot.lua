@@ -325,7 +325,7 @@ local function toggleLoop()
     isLooping = not isLooping
     
     if isLooping then
-        notify("🔄 LOOP AKTIF", "Auto Farm Loop ON\nTekan F untuk matikan", 6)
+        notify("🔄 LOOP AKTIF", "Auto Farm Loop ON\nTekan J untuk matikan", 6)
         loopConnection = RunService.Heartbeat:Connect(function()
             if not isLooping then 
                 loopConnection:Disconnect()
