@@ -177,6 +177,7 @@ local function adaptiveCrawlTo(targetPos)
     local SLOW_ZONE_DURATION = 0.4
 
     local lastWallDetectedTime = 0
+    local isFinished = false
 
     local raycastParams = RaycastParams.new()
     raycastParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -196,10 +197,14 @@ local function adaptiveCrawlTo(targetPos)
             currentRoot.CFrame = CFrame.new(finalTarget)
             currentRoot.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
             currentRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            isFinished = true
             break
         end
 
-        if totalDistance < 0.5 then break end
+        if totalDistance < 0.5 then 
+            isFinished = true
+            break 
+        end
 
         local direction = remainingVector.Unit
 
@@ -226,16 +231,38 @@ local function adaptiveCrawlTo(targetPos)
         currentRoot.CFrame = CFrame.new(nextPos)
     end
 
-    -- Final positioning & cleanup
-    task.wait(0.6)
+    -- ================== KUNCI POSISI SETELAH SAMPAI ==================
+    task.wait(0.3)
+    
     local finalRoot = getRoot()
-    if finalRoot then
+    if finalRoot and isFinished then
+        -- Kunci posisi dengan kuat
         finalRoot.CFrame = CFrame.new(finalTarget)
-        finalRoot.AssemblyLinearVelocity = Vector3.new(0, -15, 0)
+        
+        -- Matikan semua velocity
+        finalRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+        
+        -- Extra lock dengan Heartbeat sementara
+        local lockConnection
+        lockConnection = RunService.Heartbeat:Connect(function()
+            if finalRoot and finalRoot.Parent then
+                finalRoot.CFrame = CFrame.new(finalTarget)
+                finalRoot.AssemblyLinearVelocity = Vector3.new(0, -5, 0)  -- velocity kecil ke bawah agar tidak naik
+                finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+            else
+                lockConnection:Disconnect()
+            end
+        end)
+        
+        -- Matikan lock setelah beberapa detik
+        task.delay(8, function()
+            if lockConnection then lockConnection:Disconnect() end
+        end)
     end
 
     StopCrawlNoclip()
-    notify("🛡️ Noclip", "Noclip DIMATIKAN", 2)
+    notify("🛡️ Noclip", "Noclip DIMATIKAN - Posisi Dikunci", 3)
 end
 
 -- ================== FUNGSI SIMULASI TEKAN TOMBOL ==================
