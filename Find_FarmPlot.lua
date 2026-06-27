@@ -310,12 +310,10 @@ local function performFullSequence()
         adaptiveCrawlTo(backOffset)
     end
 
-    -- Tekan T Kedua
-    simulateKeyPress(Enum.KeyCode.T)
-
     task.wait(2)
 
-    -- Keyboard Menekan T
+    -- Tekan T Kedua
+    simulateKeyPress(Enum.KeyCode.T)
 
     isRunning = false
     notify("✅ Cycle Selesai", "Satu cycle farm selesai", 4)
@@ -347,7 +345,7 @@ end
 -- ================== HOTKEY ==================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.J then
+    if input.KeyCode == Enum.KeyCode.G then
         toggleLoop()
     end
 end)
