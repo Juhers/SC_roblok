@@ -347,7 +347,7 @@ end
 -- ================== HOTKEY ==================
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.J then
+    if input.KeyCode == Enum.KeyCode.G then
         toggleLoop()
     end
 end)
