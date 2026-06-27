@@ -300,7 +300,7 @@ local function performFullSequence()
 
     for i, plotPos in ipairs(plots) do
         adaptiveCrawlTo(plotPos)
-        task.wait(1)
+        task.wait(0.1)
     end
 
     local genPos = getGeneratorPosition()
