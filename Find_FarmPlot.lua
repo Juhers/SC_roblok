@@ -381,7 +381,7 @@ local function handleBloaterSafety(currentTargetPos)
     notify("💥 BLOATER DETECTED", "Menghindar ke bawah...", 3)
     
     -- Turun lebih dalam (Y -6 dari target normal)
-    local safePos = currentTargetPos + Vector3.new(0, -6, 0)
+    local safePos = currentTargetPos + Vector3.new(0, -8, 0)
     adaptiveCrawlTo(safePos, 0.8)  -- gerak lebih pelan saat menghindar
     
     currentUndergroundOffset = -6
@@ -409,7 +409,7 @@ local function performFullSequence()
     -- Generator pertama
     local targetPos = getGeneratorPosition()
     if targetPos then
-        local backOffset = targetPos + Vector3.new(0, -4, 0)
+        local backOffset = targetPos + Vector3.new(0, -2, 0)
         backOffset = handleBloaterSafety(backOffset) -- anti bloater
         adaptiveCrawlTo(backOffset, 1)
     end
@@ -450,7 +450,7 @@ local function performFullSequence()
     -- Farm semua plot
     local plots = findAllFarmPlots()
     for i, plotPos in ipairs(plots) do
-        local offset = plotPos + Vector3.new(0, -4, 0)
+        local offset = plotPos + Vector3.new(0, -2, 0)
         adaptiveCrawlTo(offset, 1)
         task.wait(0.1)
     end
@@ -458,7 +458,7 @@ local function performFullSequence()
     -- Kembali ke Generator
     targetPos = getGeneratorPosition()
     if targetPos then
-        local backOffset = targetPos + Vector3.new(0, -4, 0)
+        local backOffset = targetPos + Vector3.new(0, -2, 0)
         backOffset = handleBloaterSafety(backOffset)   -- Anti bloater
         adaptiveCrawlTo(backOffset, 1)
     end
