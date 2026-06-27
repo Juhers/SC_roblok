@@ -163,14 +163,22 @@ local function StopCrawlNoclip()
     end
 end
 
+local positionLockConnection = nil  -- Global lock
+
 local function adaptiveCrawlTo(targetPos)
     local root = getRoot()
     if not root then return end
 
+    -- Matikan lock lama jika ada
+    if positionLockConnection then
+        positionLockConnection:Disconnect()
+        positionLockConnection = nil
+    end
+
     StartCrawlNoclip()
     notify("🛡️ Noclip", "Noclip AKTIF - Sedang Crawling...", 2)
 
-    local finalTarget = targetPos + Vector3.new(0, -5, 0)  -- Naik 5 studs di atas target
+    local finalTarget = targetPos + Vector3.new(0, -5, 0)
     local BURST_SPEED = 160
     local SLOW_SPEED = 8
     local CLEARANCE_COOLDOWN = 0.7  
@@ -192,7 +200,6 @@ local function adaptiveCrawlTo(targetPos)
         local remainingVector = finalTarget - currentPos
         local totalDistance = remainingVector.Magnitude
 
-        -- Finish condition
         if totalDistance <= 3.0 then
             currentRoot.CFrame = CFrame.new(finalTarget)
             currentRoot.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
@@ -208,13 +215,11 @@ local function adaptiveCrawlTo(targetPos)
 
         local direction = remainingVector.Unit
 
-        -- Raycast untuk deteksi obstacle
         local rayResult = workspace:Raycast(currentPos, direction * 6, raycastParams)
         if rayResult and rayResult.Instance and rayResult.Instance.CanCollide then
             lastWallDetectedTime = os.clock()
         end
 
-        -- Kecepatan
         local currentAllowedSpeed = SLOW_SPEED
         if os.clock() - lastWallDetectedTime >= CLEARANCE_COOLDOWN then
             local serverTime = workspace:GetServerTimeNow()
@@ -227,42 +232,33 @@ local function adaptiveCrawlTo(targetPos)
         local frameTravel = math.min(currentAllowedSpeed * deltaTime, totalDistance)
         local nextPos = currentPos + (direction * frameTravel)
 
-        -- Terapkan pergerakan
         currentRoot.CFrame = CFrame.new(nextPos)
     end
 
-    -- ================== KUNCI POSISI SETELAH SAMPAI ==================
-    task.wait(0.3)
+    -- ================== LOCK POSISI PERMANEN ==================
+    task.wait(0.4)
     
     local finalRoot = getRoot()
     if finalRoot and isFinished then
-        -- Kunci posisi dengan kuat
         finalRoot.CFrame = CFrame.new(finalTarget)
-        
-        -- Matikan semua velocity
         finalRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-        
-        -- Extra lock dengan Heartbeat sementara
-        local lockConnection
-        lockConnection = RunService.Heartbeat:Connect(function()
-            if finalRoot and finalRoot.Parent then
-                finalRoot.CFrame = CFrame.new(finalTarget)
-                finalRoot.AssemblyLinearVelocity = Vector3.new(0, -5, 0)  -- velocity kecil ke bawah agar tidak naik
-                finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            else
-                lockConnection:Disconnect()
+
+        -- Lock permanen
+        positionLockConnection = RunService.Heartbeat:Connect(function()
+            local r = getRoot()
+            if r and r.Parent then
+                r.CFrame = CFrame.new(finalTarget)
+                r.AssemblyLinearVelocity = Vector3.new(0, -8, 0)   -- sedikit ke bawah agar tetap nempel
+                r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             end
         end)
-        
-        -- Matikan lock setelah beberapa detik
-        task.delay(8, function()
-            if lockConnection then lockConnection:Disconnect() end
-        end)
+
+        print("🔒 Posisi berhasil dikunci permanen")
     end
 
     StopCrawlNoclip()
-    notify("🛡️ Noclip", "Noclip DIMATIKAN - Posisi Dikunci", 3)
+    notify("🛡️ Noclip", "Noclip DIMATIKAN - Posisi TERKUNCI", 3)
 end
 
 -- ================== FUNGSI SIMULASI TEKAN TOMBOL ==================
