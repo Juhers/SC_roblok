@@ -88,7 +88,6 @@ end
 
 -- ================== ADAPTIVE CRAWL TO (FIXED - Anti Tenggelam) ==================
 local crawlNoclipConnection = nil
-
 local function StartCrawlNoclip()
     if crawlNoclipConnection then return end
     crawlNoclipConnection = RunService.Stepped:Connect(function()
@@ -115,7 +114,6 @@ local function StopCrawlNoclip()
     end
 end
 
--- ================== ADAPTIVE CRAWL TO (DENGAN SPEED CONTROL) ==================
 local positionLockConnection = nil
 local function adaptiveCrawlTo(targetPos, speedMultiplier)
     local root = getRoot()
@@ -295,6 +293,116 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     end
 end)
 
+-- DETEK BLOATER MELEDAK
+local function isBloaterAboutToExplode()
+
+    local DETECT_RADIUS = 80
+
+    local player = game:GetService("Players").LocalPlayer
+    local character = player.Character or player.CharacterAdded:Wait()
+    local myRoot = character:FindFirstChild("HumanoidRootPart")
+
+    if not myRoot then
+        warn("Player HumanoidRootPart tidak ditemukan")
+        return false
+    end
+
+    local characters = workspace:FindFirstChild("Characters")
+
+    if not characters then
+        warn("Workspace.Characters tidak ditemukan")
+        return false
+    end
+
+    for _, npc in ipairs(characters:GetChildren()) do
+
+        if npc ~= character then
+
+            local root = npc:FindFirstChild("HumanoidRootPart")
+
+            if root then
+
+                local distance = (root.Position - myRoot.Position).Magnitude
+
+                if distance <= DETECT_RADIUS then
+
+                    local fuse = root:FindFirstChild("Fuse")
+
+                    if not fuse then
+                        local passive = npc:FindFirstChild("Passive")
+                        if passive then
+                            fuse = passive:FindFirstChild("Fuse")
+                        end
+                    end
+
+                    local exploding
+                    local center = root:FindFirstChild("CenterParticle")
+
+                    if center then
+                        exploding = center:FindFirstChild("Exploding")
+                    end
+
+                    if fuse then
+                        if fuse:IsA("Sound") and fuse.IsPlaying then
+                            warn("🔥 Fuse aktif :", npc.Name)
+                            return true
+                        end
+                    end
+
+                    --[[
+                    if exploding then
+                        print(("Exploding ditemukan pada %s | Enabled = %s"):format(
+                            npc.Name,
+                            tostring(exploding.Enabled)
+                        ))
+
+                        if exploding:IsA("ParticleEmitter") and exploding.Enabled then
+                            warn("💥 Particle aktif :", npc.Name)
+                            return true
+                        end
+                    end
+                    ]]--
+
+                end
+            end
+        end
+    end
+
+    return false
+end
+
+-- ================== ANTI BLOATER (Deep Underground Safety) ==================
+local currentUndergroundOffset = 0  -- Untuk tracking posisi Y saat menghindar
+local function handleBloaterSafety(currentTargetPos)
+    if not isBloaterAboutToExplode() then 
+        return currentTargetPos 
+    end
+
+    notify("💥 BLOATER DETECTED", "Menghindar ke bawah...", 3)
+    
+    -- Turun lebih dalam (Y -6 dari target normal)
+    local safePos = currentTargetPos + Vector3.new(0, -6, 0)
+    adaptiveCrawlTo(safePos, 0.8)  -- gerak lebih pelan saat menghindar
+    
+    currentUndergroundOffset = -6
+    
+    -- Tunggu sampai bloater tidak lagi meledak
+    while isBloaterAboutToExplode() do
+        task.wait(0.5)
+    end
+    
+    notify("✅ BLOATER AMAN", "Kembali ke posisi normal", 3)
+    
+    -- Kembali ke posisi semula (+6)
+    local returnPos = currentTargetPos + Vector3.new(0, currentUndergroundOffset * -1, 0)
+    adaptiveCrawlTo(returnPos, 1.0)
+    currentUndergroundOffset = 0
+    
+    return returnPos
+end
+
+-- selama isBloaterAboutToExplode() true maka  adaptiveCrawlTo() turun posisi Y -6 kemudian naik kembali + 6 ketika sudah tidak terdeteksi
+
 -- ================== FULL SEQUENCE ==================
 local function performFullSequence()
     if isRunning then return end
@@ -303,6 +411,7 @@ local function performFullSequence()
     local targetPos = getGeneratorPosition()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -4, 0)
+        backOffset = handleBloaterSafety(backOffset)
         adaptiveCrawlTo(backOffset, 1)
     end
     
@@ -355,6 +464,7 @@ local function performFullSequence()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -4, 0)
         adaptiveCrawlTo(backOffset, 1)
+        backOffset = handleBloaterSafety(backOffset)
     end
 
     task.wait(5)
