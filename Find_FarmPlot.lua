@@ -178,7 +178,7 @@ local function adaptiveCrawlTo(targetPos)
     StartCrawlNoclip()
     notify("🛡️ Noclip", "Noclip AKTIF - Sedang Crawling...", 2)
 
-    local finalTarget = targetPos + Vector3.new(0, -5, 0)
+    local finalTarget = targetPos
     local BURST_SPEED = 160
     local SLOW_SPEED = 8
     local CLEARANCE_COOLDOWN = 0.7  
