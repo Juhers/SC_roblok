@@ -74,3 +74,8 @@ local function isBloaterAboutToExplode()
 
     return false
 end
+
+while true do
+    print(isBloaterAboutToExplode() and "💥 BLOATER AKAN MELEDAK!" or "✅ Tidak ada bloater yang meledak")
+    task.wait(1)
+end

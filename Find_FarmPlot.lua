@@ -296,7 +296,7 @@ end)
 -- DETEK BLOATER MELEDAK
 local function isBloaterAboutToExplode()
 
-    local DETECT_RADIUS = 80
+    local DETECT_RADIUS = 110
 
     local player = game:GetService("Players").LocalPlayer
     local character = player.Character or player.CharacterAdded:Wait()
@@ -371,34 +371,54 @@ local function isBloaterAboutToExplode()
     return false
 end
 
--- ================== ANTI BLOATER (Deep Underground Safety) ==================
-local currentUndergroundOffset = 0  -- Untuk tracking posisi Y saat menghindar
-local function handleBloaterSafety(currentTargetPos)
-    if not isBloaterAboutToExplode() then 
-        return currentTargetPos 
-    end
+-- ================== BACKGROUND BLOATER MONITOR ==================
+local bloaterMonitorConnection = nil
+local isInEmergencyDive = false
+local emergencyOriginalPos = nil
 
-    notify("💥 BLOATER DETECTED", "Menghindar ke bawah...", 3)
+local function startBloaterMonitor()
+    if bloaterMonitorConnection then return end
     
-    -- Turun lebih dalam (Y -6 dari target normal)
-    local safePos = currentTargetPos + Vector3.new(0, -8, 0)
-    adaptiveCrawlTo(safePos, 0.8)  -- gerak lebih pelan saat menghindar
-    
-    currentUndergroundOffset = -6
-    
-    -- Tunggu sampai bloater tidak lagi meledak
-    while isBloaterAboutToExplode() do
-        task.wait(0.5)
+    bloaterMonitorConnection = RunService.Heartbeat:Connect(function()
+        if not isRunning then return end
+
+        local root = getRoot()
+        if not root then return end
+
+        if isBloaterAboutToExplode() then
+            if not isInEmergencyDive then
+                -- Mulai menghindar
+                notify("💥 BLOATER DARURAT!", "Menghindar ke bawah secara otomatis...", 3)
+                
+                isInEmergencyDive = true
+                emergencyOriginalPos = root.Position
+                
+                local emergencyPos = root.Position + Vector3.new(0, -8, 0)
+                adaptiveCrawlTo(emergencyPos, 0.7)
+            end
+        else
+            -- Bloater sudah aman
+            if isInEmergencyDive then
+                notify("✅ BLOATER AMAN", "Kembali ke posisi semula...", 3)
+                
+                if emergencyOriginalPos then
+                    adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+                end
+                
+                isInEmergencyDive = false
+                emergencyOriginalPos = nil
+            end
+        end
+    end)
+end
+
+local function stopBloaterMonitor()
+    if bloaterMonitorConnection then
+        bloaterMonitorConnection:Disconnect()
+        bloaterMonitorConnection = nil
     end
-    
-    notify("✅ BLOATER AMAN", "Kembali ke posisi normal", 3)
-    
-    -- Kembali ke posisi semula (+6)
-    local returnPos = currentTargetPos + Vector3.new(0, currentUndergroundOffset * -1, 0)
-    adaptiveCrawlTo(returnPos, 1.0)
-    currentUndergroundOffset = 0
-    
-    return returnPos
+    isInEmergencyDive = false
+    emergencyOriginalPos = nil
 end
 
 -- ================== FULL SEQUENCE ==================
@@ -410,7 +430,6 @@ local function performFullSequence()
     local targetPos = getGeneratorPosition()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -2, 0)
-        backOffset = handleBloaterSafety(backOffset) -- anti bloater
         adaptiveCrawlTo(backOffset, 1)
     end
     
@@ -459,7 +478,6 @@ local function performFullSequence()
     targetPos = getGeneratorPosition()
     if targetPos then
         local backOffset = targetPos + Vector3.new(0, -2, 0)
-        backOffset = handleBloaterSafety(backOffset)   -- Anti bloater
         adaptiveCrawlTo(backOffset, 1)
     end
 
@@ -476,6 +494,8 @@ local function toggleLoop()
     
     if isLooping then
         notify("🔄 LOOP AKTIF", "Auto Farm Loop ON\nTekan J untuk matikan", 6)
+        startBloaterMonitor()
+
         loopConnection = RunService.Heartbeat:Connect(function()
             if not isLooping then 
                 loopConnection:Disconnect()
@@ -486,6 +506,7 @@ local function toggleLoop()
             end
         end)
     else
+        stopBloaterMonitor()
         if loopConnection then
             loopConnection:Disconnect()
             loopConnection = nil
