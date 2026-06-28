@@ -430,7 +430,7 @@ local function startBloaterMonitor()
                     task.wait(5)
                     if isInEmergencyDive then
                         notify("✅ BLOATER AMAN", "Kembali ke posisi Generator...", 3)
-                        local safePos = generatorPos + Vector3.new(0, -10, 0)
+                        local safePos = generatorPos + Vector3.new(0, -2, 0)
                         adaptiveCrawlTo(safePos, 0.7)
                     end
                 end)
@@ -439,7 +439,7 @@ local function startBloaterMonitor()
         
         -- Reset jika bloater sudah aman
         if not currentState and isInEmergencyDive then
-            local safePos = generatorPos + Vector3.new(0, -10, 0)
+            local safePos = generatorPos + Vector3.new(0, -2, 0)
             adaptiveCrawlTo(safePos, 0.7)
         end
         
