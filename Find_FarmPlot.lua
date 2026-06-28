@@ -246,15 +246,34 @@ local function simulateKeyPress(keyCode)
     notify("⌨️ Simulate", "Tombol T ditekan", 2)
 end
 
-local function spamJumpSimple()
-    local character = player.Character
-    if not character then return end
-    local humanoid = character:FindFirstChild("Humanoid")
+
+local spamJumpConnection = nil
+local function startSpamJump()
+    if spamJumpConnection then 
+        notify("🔄 Spam Jump", "Spam Jump sudah aktif!", 2)
+        return 
+    end
+
+    spamJumpConnection = RunService.Heartbeat:Connect(spamJumpSimple)
+    
+    notify("🔄 Spam Jump", "Spam Jump AKTIF\n(Tekan J untuk matikan)", 5)
+end
+
+local function stopSpamJump()
+    if spamJumpConnection then
+        spamJumpConnection:Disconnect()
+        spamJumpConnection = nil
+    end
+
+    -- Kembalikan ke state normal
+    local humanoid = player.Character and player.Character:FindFirstChild("Humanoid")
     if humanoid then
         pcall(function()
-            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+            humanoid:ChangeState(Enum.HumanoidStateType.Running)
         end)
     end
+
+    notify("🔄 Spam Jump", "Spam Jump DIMATIKAN", 4)
 end
 
 -- ================== FUNGSI DETEKSI ==================
@@ -497,6 +516,8 @@ local function performFullSequence()
         local backOffset = targetPos + Vector3.new(0, -2, 0)
         adaptiveCrawlTo(backOffset, 1)
     end
+
+    startSpamJump()
     
     -- ================== HITUNG MUNDUR 10 MENIT ==================
     notify("⏳ UNDERGROUND", "Menunggu 10 menit untuk stabilisasi...", 5)
@@ -525,8 +546,10 @@ local function performFullSequence()
         end
     end
 
+    stopSpamJump()
+    
     task.wait(3)
-
+    
     -- Tekan T Pertama
     simulateKeyPress(Enum.KeyCode.T)
     stopLoop = false
@@ -585,13 +608,6 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.G then
         toggleLoop()
-    end
-end)
-
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-    if input.KeyCode == Enum.KeyCode.J then
-        RunService.Heartbeat:Connect(spamJumpSimple)
     end
 end)
 
