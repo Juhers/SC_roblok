@@ -448,11 +448,11 @@ local function startBloaterMonitor()
                 
                 local generatorPos = getGeneratorPosition()
                 if generatorPos then
-                    local safePos = generatorPos + Vector3.new(0, -20, 0)
+                    local safePos = generatorPos + Vector3.new(0, -13, 0)
                     adaptiveCrawlTo(safePos, 0.7)
                 else
                     -- Fallback jika generator tidak ditemukan
-                    local emergencyPos = root.Position + Vector3.new(0, -20, 0)
+                    local emergencyPos = root.Position + Vector3.new(0, -13, 0)
                     adaptiveCrawlTo(emergencyPos, 0.7)
                 end
                 
