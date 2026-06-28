@@ -375,6 +375,7 @@ end
 local bloaterMonitorConnection = nil
 local isInEmergencyDive = false
 local emergencyOriginalPos = nil
+local lastBloaterState = false
 
 local function startBloaterMonitor()
     if bloaterMonitorConnection then return end
@@ -385,14 +386,17 @@ local function startBloaterMonitor()
         local root = getRoot()
         if not root then return end
 
-        if isBloaterAboutToExplode() then
+        local currentState = isBloaterAboutToExplode()
+        
+        -- Hanya trigger saat state berubah dari false → true
+        if currentState and not lastBloaterState then
             if not isInEmergencyDive then
                 notify("💥 BLOATER DARURAT!", "Menghindar ke bawah selama 5 detik...", 3)
                 
                 isInEmergencyDive = true
                 emergencyOriginalPos = root.Position
                 
-                -- Matikan lock sementara agar bisa gerak
+                -- Matikan lock sementara
                 if positionLockConnection then
                     positionLockConnection:Disconnect()
                     positionLockConnection = nil
@@ -401,7 +405,7 @@ local function startBloaterMonitor()
                 local emergencyPos = root.Position + Vector3.new(0, -12, 0)
                 adaptiveCrawlTo(emergencyPos, 0.7)
                 
-                -- Tunggu 5 detik di bawah (ini yang kamu minta)
+                -- Tunggu 5 detik lalu kembali (hanya sekali)
                 task.spawn(function()
                     task.wait(5)
                     
@@ -421,18 +425,21 @@ local function startBloaterMonitor()
                     end
                 end)
             end
-        else
-            -- Jika bloater sudah tidak ada tapi masih dalam mode dive (jarang terjadi)
-            if isInEmergencyDive and emergencyOriginalPos then
-                if positionLockConnection then
-                    positionLockConnection:Disconnect()
-                    positionLockConnection = nil
-                end
-                adaptiveCrawlTo(emergencyOriginalPos, 1.0)
-                isInEmergencyDive = false
-                emergencyOriginalPos = nil
-            end
         end
+        
+        -- Reset jika bloater sudah tidak meledak
+        if not currentState and isInEmergencyDive and emergencyOriginalPos then
+            if positionLockConnection then
+                positionLockConnection:Disconnect()
+                positionLockConnection = nil
+            end
+            adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+            isInEmergencyDive = false
+            emergencyOriginalPos = nil
+        end
+        
+        -- Update last state
+        lastBloaterState = currentState
     end)
 end
 
