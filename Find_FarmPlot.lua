@@ -408,7 +408,7 @@ local function returnToGeneratorPosition()
         return
     end
 
-    local safeTarget = generatorPos + Vector3.new(0, -2.5, 0)  -- sedikit lebih rendah
+    local safeTarget = generatorPos + Vector3.new(0, -2, 0)  -- sedikit lebih rendah
 
     task.wait(0.3)
 
