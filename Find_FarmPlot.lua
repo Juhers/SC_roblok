@@ -1,13 +1,6 @@
 -- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot + Looping
 -- Toggle Loop: Tekan F
 
--- Taruh ini di paling atas, bersama deklarasi variabel lain
-local lastReturnTime = 0
-local lastBloaterState = false
-local isInEmergencyDive = false
-local isEmergencyMoving = false
-local isCrawling = false
-
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -398,18 +391,31 @@ local function isBloaterAboutToExplode()
 end
 
 local function returnToGeneratorPosition()
-    if isEmergencyMoving then return end
+    if not isInEmergencyDive and not isEmergencyMoving then 
+        return 
+    end
+    
     isEmergencyMoving = true
     
-    notify("🔄 RETURN", "Kembali ke Generator...", 3)
-
+    -- Bersihkan semua lock dan noclip sebelum mulai crawl baru
+    if positionLockConnection then
+        positionLockConnection:Disconnect()
+        positionLockConnection = nil
+    end
+    
+    StopCrawlNoclip()  -- Pastikan noclip mati dulu
+    
+    task.wait(0.2) -- Sedikit delay untuk stabilisasi
+    
     local generatorPos = getGeneratorPosition()
     if generatorPos then
-        local targetPos = generatorPos + Vector3.new(0, -2, 0)
-        adaptiveCrawlTo(targetPos, 0.9)
+        local normalPos = generatorPos + Vector3.new(0, -2, 0)
+        adaptiveCrawlTo(normalPos, 1.0)
+    else
+        notify("⚠️ Warning", "Generator tidak ditemukan saat return", 3)
     end
-
-    task.wait(2)
+    
+    task.wait(1.0)
     isInEmergencyDive = false
     isEmergencyMoving = false
 end
@@ -428,25 +434,32 @@ local function startBloaterMonitor()
         -- ================== EMERGENCY DIVE ==================
         if currentState and not lastBloaterState then
             if not isInEmergencyDive and not isEmergencyMoving then
+                
                 isEmergencyMoving = true
                 isInEmergencyDive = true
                 
-                notify("💥 BLOATER DARURAT!", "Menghindar ke posisi aman...", 3)
+                notify("💥 BLOATER DARURAT!", "Menghindar ke posisi aman di bawah Generator...", 3)
                 
+                -- Matikan lock permanen
                 if positionLockConnection then
                     positionLockConnection:Disconnect()
                     positionLockConnection = nil
                 end
                 
                 local generatorPos = getGeneratorPosition()
-                local safePos = generatorPos and (generatorPos + Vector3.new(0, -10, 0)) 
-                              or (root.Position + Vector3.new(0, -10, 0))
-                
-                adaptiveCrawlTo(safePos, 0.7)
+                if generatorPos then
+                    local safePos = generatorPos + Vector3.new(0, -10, 0)
+                    adaptiveCrawlTo(safePos, 0.7)
+                else
+                    -- Fallback jika generator tidak ditemukan
+                    local emergencyPos = root.Position + Vector3.new(0, -10, 0)
+                    adaptiveCrawlTo(emergencyPos, 0.7)
+                end
                 
                 task.spawn(function()
                     task.wait(5)
                     if isInEmergencyDive then
+                        notify("✅ BLOATER AMAN", "Kembali ke posisi Generator...", 3)
                         returnToGeneratorPosition()
                     end
                 end)
