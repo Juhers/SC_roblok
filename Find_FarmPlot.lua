@@ -448,16 +448,16 @@ local function startBloaterMonitor()
                 
                 local generatorPos = getGeneratorPosition()
                 if generatorPos then
-                    local safePos = generatorPos + Vector3.new(0, -13, 0)
+                    local safePos = generatorPos + Vector3.new(0, -10, 0)
                     adaptiveCrawlTo(safePos, 0.7)
                 else
                     -- Fallback jika generator tidak ditemukan
-                    local emergencyPos = root.Position + Vector3.new(0, -13, 0)
+                    local emergencyPos = root.Position + Vector3.new(0, -10, 0)
                     adaptiveCrawlTo(emergencyPos, 0.7)
                 end
                 
                 task.spawn(function()
-                    task.wait(7)
+                    task.wait(5)
                     if isInEmergencyDive then
                         notify("✅ BLOATER AMAN", "Kembali ke posisi Generator...", 3)
                         returnToGeneratorPosition()
