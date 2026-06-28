@@ -390,35 +390,10 @@ local function isBloaterAboutToExplode()
     return false
 end
 
-local function returnToGeneratorPosition()
-    if not isInEmergencyDive and not isEmergencyMoving then 
-        return 
-    end
-    
-    isEmergencyMoving = true
-    
-    -- Bersihkan semua lock dan noclip sebelum mulai crawl baru
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-        positionLockConnection = nil
-    end
-    
-    StopCrawlNoclip()  -- Pastikan noclip mati dulu
-    
-    task.wait(0.2) -- Sedikit delay untuk stabilisasi
-    
-    local generatorPos = getGeneratorPosition()
-    if generatorPos then
-        local normalPos = generatorPos + Vector3.new(0, -2, 0)
-        adaptiveCrawlTo(normalPos, 1.0)
-    else
-        notify("⚠️ Warning", "Generator tidak ditemukan saat return", 3)
-    end
-    
-    task.wait(1.0)
-    isInEmergencyDive = false
-    isEmergencyMoving = false
-end
+-- ================== BACKGROUND BLOATER MONITOR ==================
+local bloaterMonitorConnection = nil
+local isInEmergencyDive = false
+local emergencyOriginalPos = nil
 
 local function startBloaterMonitor()
     if bloaterMonitorConnection then return end
@@ -429,49 +404,54 @@ local function startBloaterMonitor()
         local root = getRoot()
         if not root then return end
 
-        local currentState = isBloaterAboutToExplode()
-        
-        -- ================== EMERGENCY DIVE ==================
-        if currentState and not lastBloaterState then
-            if not isInEmergencyDive and not isEmergencyMoving then
+        if isBloaterAboutToExplode() then
+            if not isInEmergencyDive then
+                notify("💥 BLOATER DARURAT!", "Menghindar ke bawah selama 5 detik...", 3)
                 
-                isEmergencyMoving = true
                 isInEmergencyDive = true
+                emergencyOriginalPos = root.Position
                 
-                notify("💥 BLOATER DARURAT!", "Menghindar ke posisi aman di bawah Generator...", 3)
-                
-                -- Matikan lock permanen
+                -- Matikan lock sementara agar bisa gerak
                 if positionLockConnection then
                     positionLockConnection:Disconnect()
                     positionLockConnection = nil
                 end
                 
-                local generatorPos = getGeneratorPosition()
-                if generatorPos then
-                    local safePos = generatorPos + Vector3.new(0, -10, 0)
-                    adaptiveCrawlTo(safePos, 0.7)
-                else
-                    -- Fallback jika generator tidak ditemukan
-                    local emergencyPos = root.Position + Vector3.new(0, -10, 0)
-                    adaptiveCrawlTo(emergencyPos, 0.7)
-                end
+                local emergencyPos = root.Position + Vector3.new(0, -12, 0)
+                adaptiveCrawlTo(emergencyPos, 0.7)
                 
+                -- Tunggu 5 detik di bawah (ini yang kamu minta)
                 task.spawn(function()
                     task.wait(5)
-                    if isInEmergencyDive then
-                        notify("✅ BLOATER AMAN", "Kembali ke posisi Generator...", 3)
-                        returnToGeneratorPosition()
+                    
+                    if isInEmergencyDive and not isBloaterAboutToExplode() then
+                        notify("✅ BLOATER AMAN", "Kembali ke posisi semula...", 3)
+                        
+                        if emergencyOriginalPos then
+                            if positionLockConnection then
+                                positionLockConnection:Disconnect()
+                                positionLockConnection = nil
+                            end
+                            adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+                        end
+                        
+                        isInEmergencyDive = false
+                        emergencyOriginalPos = nil
                     end
                 end)
             end
+        else
+            -- Jika bloater sudah tidak ada tapi masih dalam mode dive (jarang terjadi)
+            if isInEmergencyDive and emergencyOriginalPos then
+                if positionLockConnection then
+                    positionLockConnection:Disconnect()
+                    positionLockConnection = nil
+                end
+                adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+                isInEmergencyDive = false
+                emergencyOriginalPos = nil
+            end
         end
-        
-        -- Reset jika bloater sudah aman
-        if not currentState and isInEmergencyDive then
-            returnToGeneratorPosition()
-        end
-        
-        lastBloaterState = currentState
     end)
 end
 
@@ -480,18 +460,8 @@ local function stopBloaterMonitor()
         bloaterMonitorConnection:Disconnect()
         bloaterMonitorConnection = nil
     end
-    
-    -- Bersihkan SEMUA state
     isInEmergencyDive = false
-    isEmergencyMoving = false
-    isCrawling = false
-    
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-        positionLockConnection = nil
-    end
-    
-    StopCrawlNoclip()
+    emergencyOriginalPos = nil
 end
 
 -- ================== FULL SEQUENCE ==================
