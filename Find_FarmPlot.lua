@@ -19,6 +19,13 @@ local undergroundConnection = nil
 local originalHip = humanoid.HipHeight
 local undergroundHomeCFrame = nil
 
+local bloaterMonitorConnection = nil   -- ← TAMBAHKAN INI
+local isInEmergencyDive = false
+local emergencyOriginalPos = nil
+local lastBloaterState = false
+local isEmergencyMoving = false
+local isCrawling = false               -- Proteksi crawl
+
 -- ================== NOTIFIKASI ==================
 local function notify(title, text, duration)
     duration = duration or 4
@@ -116,8 +123,16 @@ end
 
 local positionLockConnection = nil
 local function adaptiveCrawlTo(targetPos, speedMultiplier)
+    if isCrawling then 
+        return 
+    end
+    
+    isCrawling = true
     local root = getRoot()
-    if not root then return end
+    if not root then 
+        isCrawling = false
+        return 
+    end
 
     if positionLockConnection then
         positionLockConnection:Disconnect()
@@ -183,8 +198,6 @@ local function adaptiveCrawlTo(targetPos, speedMultiplier)
         local nextPos = currentPos + (direction * frameTravel)
 
         currentRoot.CFrame = CFrame.new(nextPos)
-        
-        -- Penting: Update ke server agar terlihat di akun lain
         currentRoot.Velocity = Vector3.new(0,0,0)
     end
 
@@ -196,15 +209,12 @@ local function adaptiveCrawlTo(targetPos, speedMultiplier)
         finalRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
         finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
 
-        -- Lock permanen
         positionLockConnection = RunService.Heartbeat:Connect(function()
             local r = getRoot()
             if r and r.Parent then
                 r.CFrame = CFrame.new(finalTarget)
                 r.AssemblyLinearVelocity = Vector3.new(0, -8, 0)
                 r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-                
-                -- Update ke server setiap frame
                 r.Velocity = Vector3.new(0,0,0)
             end
         end)
@@ -212,6 +222,29 @@ local function adaptiveCrawlTo(targetPos, speedMultiplier)
 
     StopCrawlNoclip()
     notify("🛡️ Noclip", "Noclip DIMATIKAN - Posisi TERKUNCI", 3)
+    
+    task.wait(0.3)
+    isCrawling = false   -- ← PENTING
+end
+
+local function returnToOriginalPosition()
+    if not isInEmergencyDive or not emergencyOriginalPos then 
+        isEmergencyMoving = false
+        return 
+    end
+    
+    if positionLockConnection then
+        positionLockConnection:Disconnect()
+        positionLockConnection = nil
+    end
+    
+    isEmergencyMoving = true
+    adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+    
+    task.wait(1.5) -- Beri waktu crawl selesai
+    isInEmergencyDive = false
+    emergencyOriginalPos = nil
+    isEmergencyMoving = false
 end
 
 -- ================== FUNGSI SIMULASI TEKAN TOMBOL ==================
@@ -372,11 +405,6 @@ local function isBloaterAboutToExplode()
 end
 
 -- ================== BACKGROUND BLOATER MONITOR ==================
-local bloaterMonitorConnection = nil
-local isInEmergencyDive = false
-local emergencyOriginalPos = nil
-local lastBloaterState = false
-
 local function startBloaterMonitor()
     if bloaterMonitorConnection then return end
     
@@ -388,15 +416,17 @@ local function startBloaterMonitor()
 
         local currentState = isBloaterAboutToExplode()
         
-        -- Hanya trigger saat state berubah dari false → true
+        -- ================== EMERGENCY DIVE ==================
         if currentState and not lastBloaterState then
-            if not isInEmergencyDive then
-                notify("💥 BLOATER DARURAT!", "Menghindar ke bawah selama 5 detik...", 3)
+            if not isInEmergencyDive and not isEmergencyMoving then
                 
+                isEmergencyMoving = true
                 isInEmergencyDive = true
                 emergencyOriginalPos = root.Position
                 
-                -- Matikan lock sementara
+                notify("💥 BLOATER DARURAT!", "Menghindar ke bawah selama 5 detik...", 3)
+                
+                -- Matikan lock permanen
                 if positionLockConnection then
                     positionLockConnection:Disconnect()
                     positionLockConnection = nil
@@ -405,40 +435,23 @@ local function startBloaterMonitor()
                 local emergencyPos = root.Position + Vector3.new(0, -12, 0)
                 adaptiveCrawlTo(emergencyPos, 0.7)
                 
-                -- Tunggu 5 detik lalu kembali (hanya sekali)
+                -- Auto return setelah 5 detik
                 task.spawn(function()
                     task.wait(5)
                     
-                    if isInEmergencyDive and not isBloaterAboutToExplode() then
+                    if isInEmergencyDive then
                         notify("✅ BLOATER AMAN", "Kembali ke posisi semula...", 3)
-                        
-                        if emergencyOriginalPos then
-                            if positionLockConnection then
-                                positionLockConnection:Disconnect()
-                                positionLockConnection = nil
-                            end
-                            adaptiveCrawlTo(emergencyOriginalPos, 1.0)
-                        end
-                        
-                        isInEmergencyDive = false
-                        emergencyOriginalPos = nil
+                        returnToOriginalPosition()
                     end
                 end)
             end
         end
         
-        -- Reset jika bloater sudah tidak meledak
-        if not currentState and isInEmergencyDive and emergencyOriginalPos then
-            if positionLockConnection then
-                positionLockConnection:Disconnect()
-                positionLockConnection = nil
-            end
-            adaptiveCrawlTo(emergencyOriginalPos, 1.0)
-            isInEmergencyDive = false
-            emergencyOriginalPos = nil
+        -- ================== RESET JIKA BLOATER AMAN ==================
+        if not currentState and isInEmergencyDive then
+            returnToOriginalPosition()
         end
         
-        -- Update last state
         lastBloaterState = currentState
     end)
 end
@@ -450,6 +463,8 @@ local function stopBloaterMonitor()
     end
     isInEmergencyDive = false
     emergencyOriginalPos = nil
+    isEmergencyMoving = false
+    isCrawling = false
 end
 
 -- ================== FULL SEQUENCE ==================
