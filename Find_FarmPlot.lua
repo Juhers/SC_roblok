@@ -410,13 +410,6 @@ local function returnToGeneratorPosition()
 
     local safeTarget = generatorPos + Vector3.new(0, -2.5, 0)  -- sedikit lebih rendah
 
-    -- Paksa posisi tetap rendah dulu sebelum crawl
-    local root = getRoot()
-    if root then
-        root.CFrame = CFrame.new(root.Position.X, -8, root.Position.Z)  -- paksa turun dulu
-        root.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
-    end
-
     task.wait(0.3)
 
     -- Jalankan crawl dengan proteksi lebih kuat
