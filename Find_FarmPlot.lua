@@ -591,7 +591,7 @@ end)
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.J then
-        spamJumpSimple()
+        RunService.Heartbeat:Connect(spamJumpSimple)
     end
 end)
 
