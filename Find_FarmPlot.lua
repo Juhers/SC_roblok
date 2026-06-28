@@ -396,66 +396,57 @@ local function returnToGeneratorPosition()
     end
     
     isEmergencyMoving = true
-    notify("🔄 RETURN", "Kembali ke Generator dengan proteksi maksimal...", 3)
+    notify("🔄 RETURN", "Kembali ke Generator...", 3)
 
     local generatorPos = getGeneratorPosition()
     if not generatorPos then
         notify("⚠️ Warning", "Generator tidak ditemukan saat return", 3)
-        isInEmergencyDive = false
-        isEmergencyMoving = false
-        return
+        goto cleanup
     end
 
     local targetPos = generatorPos + Vector3.new(0, -2, 0)
 
-    -- =============================================
-    -- PROTEKSI TRANSISI (PENTING!)
-    -- =============================================
-    
-    -- Jangan langsung disconnect lock, tapi buat lock sementara yang kuat
+    -- Matikan lock lama dengan aman
+    if positionLockConnection then
+        positionLockConnection:Disconnect()
+        positionLockConnection = nil
+    end
+
+    StopCrawlNoclip()
+
+    -- Paksa posisi stabil sebentar
+    local root = getRoot()
+    if root then
+        root.CFrame = CFrame.new(root.Position.X, targetPos.Y - 3, root.Position.Z)
+        root.AssemblyLinearVelocity = Vector3.new(0, -6, 0)
+    end
+
+    task.wait(0.25)
+
+    -- Jalankan crawl
+    StartCrawlNoclip()
+    adaptiveCrawlTo(targetPos, 0.9)
+
+    -- Tunggu sampai adaptiveCrawlTo selesai bekerja
+    task.wait(0.8)
+
+    -- Lock permanen yang stabil
     if positionLockConnection then
         positionLockConnection:Disconnect()
     end
 
-    -- Lock transisi sementara (anti jatuh ke void)
     positionLockConnection = RunService.Heartbeat:Connect(function()
         local r = getRoot()
         if r and r.Parent then
-            -- Paksa tetap di ketinggian rendah selama transisi
-            r.CFrame = CFrame.new(r.Position.X, targetPos.Y - 1, r.Position.Z)
-            r.AssemblyLinearVelocity = Vector3.new(0, -4, 0)   -- dorong ke bawah pelan
-            r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            r.Velocity = Vector3.new(0, 0, 0)
-        end
-    end)
-
-    task.wait(0.3)
-
-    -- Sekarang jalankan crawl (dengan noclip yang aman)
-    StopCrawlNoclip()  -- matikan dulu jika ada
-    StartCrawlNoclip() -- nyalakan kembali
-
-    adaptiveCrawlTo(targetPos, 0.85)
-
-    -- Setelah sampai, ganti ke lock permanen yang stabil
-    task.wait(0.4)
-
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-    end
-
-    -- Lock permanen yang aman
-    positionLockConnection = RunService.Heartbeat:Connect(function()
-        local r = getRoot()
-        if r and r.Parent then
-            r.CFrame = CFrame.new(targetPos.X, targetPos.Y - 0.4, targetPos.Z)
+            r.CFrame = CFrame.new(targetPos.X, targetPos.Y - 0.5, targetPos.Z)
             r.AssemblyLinearVelocity = Vector3.new(0, -3, 0)
             r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             r.Velocity = Vector3.new(0, 0, 0)
         end
     end)
 
-    task.wait(1.2)
+    ::cleanup::
+    task.wait(1.0)
     isInEmergencyDive = false
     isEmergencyMoving = false
 end
