@@ -439,6 +439,7 @@ local function startBloaterMonitor()
         
         -- Reset jika bloater sudah aman
         if not currentState and isInEmergencyDive then
+            local generatorPos = getGeneratorPosition()
             local safePos = generatorPos + Vector3.new(0, -2, 0)
             adaptiveCrawlTo(safePos, 0.7)
         end
