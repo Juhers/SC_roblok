@@ -432,7 +432,12 @@ local function startBloaterMonitor()
                                 positionLockConnection:Disconnect()
                                 positionLockConnection = nil
                             end
-                            adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+                            -- Generator pertama
+                            local targetPos = getGeneratorPosition()
+                            if targetPos then
+                                local backOffset = targetPos + Vector3.new(0, -2, 0)
+                                adaptiveCrawlTo(backOffset, 1)
+                            end
                         end
                         
                         isInEmergencyDive = false
@@ -447,7 +452,12 @@ local function startBloaterMonitor()
                     positionLockConnection:Disconnect()
                     positionLockConnection = nil
                 end
-                adaptiveCrawlTo(emergencyOriginalPos, 1.0)
+                -- Generator pertama
+                local targetPos = getGeneratorPosition()
+                if targetPos then
+                    local backOffset = targetPos + Vector3.new(0, -2, 0)
+                    adaptiveCrawlTo(backOffset, 1)
+                end
                 isInEmergencyDive = false
                 emergencyOriginalPos = nil
             end
