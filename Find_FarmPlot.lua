@@ -390,47 +390,57 @@ local function isBloaterAboutToExplode()
     return false
 end
 
+local lastReturnTime = 0
 local function returnToGeneratorPosition()
-    if not isInEmergencyDive and not isEmergencyMoving then 
+    local currentTime = os.clock()
+    
+    -- Anti spam / loop protection
+    if currentTime - lastReturnTime < 8 then  -- minimal 8 detik sekali
+        return
+    end
+    lastReturnTime = currentTime
+
+    if not isInEmergencyDive then 
         return 
     end
+    
+    if isEmergencyMoving then return end
     
     isEmergencyMoving = true
     notify("🔄 RETURN", "Kembali ke Generator...", 3)
 
     local generatorPos = getGeneratorPosition()
     if not generatorPos then
-        notify("⚠️ Warning", "Generator tidak ditemukan saat return", 3)
+        notify("⚠️ Warning", "Generator tidak ditemukan", 3)
         goto cleanup
     end
 
     local targetPos = generatorPos + Vector3.new(0, -2, 0)
 
-    -- Matikan lock lama dengan aman
+    -- Bersihkan semua lock & state
     if positionLockConnection then
         positionLockConnection:Disconnect()
         positionLockConnection = nil
     end
-
     StopCrawlNoclip()
+    isCrawling = false
 
-    -- Paksa posisi stabil sebentar
+    -- Paksa stabil di bawah
     local root = getRoot()
     if root then
         root.CFrame = CFrame.new(root.Position.X, targetPos.Y - 3, root.Position.Z)
         root.AssemblyLinearVelocity = Vector3.new(0, -6, 0)
     end
 
-    task.wait(0.25)
+    task.wait(0.4)
 
-    -- Jalankan crawl
+    -- Crawl ke posisi
     StartCrawlNoclip()
     adaptiveCrawlTo(targetPos, 0.9)
 
-    -- Tunggu sampai adaptiveCrawlTo selesai bekerja
-    task.wait(0.8)
+    task.wait(1.0)   -- beri waktu lebih lama
 
-    -- Lock permanen yang stabil
+    -- Lock permanen
     if positionLockConnection then
         positionLockConnection:Disconnect()
     end
@@ -439,16 +449,17 @@ local function returnToGeneratorPosition()
         local r = getRoot()
         if r and r.Parent then
             r.CFrame = CFrame.new(targetPos.X, targetPos.Y - 0.5, targetPos.Z)
-            r.AssemblyLinearVelocity = Vector3.new(0, -3, 0)
+            r.AssemblyLinearVelocity = Vector3.new(0, -2.5, 0)
             r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
             r.Velocity = Vector3.new(0, 0, 0)
         end
     end)
 
     ::cleanup::
-    task.wait(1.0)
+    task.wait(1.5)
     isInEmergencyDive = false
     isEmergencyMoving = false
+    isCrawling = false
 end
 
 local function startBloaterMonitor()
