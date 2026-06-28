@@ -390,76 +390,6 @@ local function isBloaterAboutToExplode()
     return false
 end
 
-local function returnToGeneratorPosition()
-    if not isInEmergencyDive and not isEmergencyMoving then 
-        return 
-    end
-    
-    isEmergencyMoving = true
-    notify("🔄 RETURN", "Kembali ke Generator dengan proteksi maksimal...", 3)
-
-    local generatorPos = getGeneratorPosition()
-    if not generatorPos then
-        notify("⚠️ Warning", "Generator tidak ditemukan saat return", 3)
-        isInEmergencyDive = false
-        isEmergencyMoving = false
-        return
-    end
-
-    local targetPos = generatorPos + Vector3.new(0, -2, 0)
-
-    -- =============================================
-    -- PROTEKSI TRANSISI (PENTING!)
-    -- =============================================
-    
-    -- Jangan langsung disconnect lock, tapi buat lock sementara yang kuat
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-    end
-
-    -- Lock transisi sementara (anti jatuh ke void)
-    positionLockConnection = RunService.Heartbeat:Connect(function()
-        local r = getRoot()
-        if r and r.Parent then
-            -- Paksa tetap di ketinggian rendah selama transisi
-            r.CFrame = CFrame.new(r.Position.X, targetPos.Y - 1, r.Position.Z)
-            r.AssemblyLinearVelocity = Vector3.new(0, -4, 0)   -- dorong ke bawah pelan
-            r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            r.Velocity = Vector3.new(0, 0, 0)
-        end
-    end)
-
-    task.wait(0.3)
-
-    -- Sekarang jalankan crawl (dengan noclip yang aman)
-    StopCrawlNoclip()  -- matikan dulu jika ada
-    StartCrawlNoclip() -- nyalakan kembali
-
-    adaptiveCrawlTo(targetPos, 0.85)
-
-    -- Setelah sampai, ganti ke lock permanen yang stabil
-    task.wait(0.4)
-
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-    end
-
-    -- Lock permanen yang aman
-    positionLockConnection = RunService.Heartbeat:Connect(function()
-        local r = getRoot()
-        if r and r.Parent then
-            r.CFrame = CFrame.new(targetPos.X, targetPos.Y - 0.4, targetPos.Z)
-            r.AssemblyLinearVelocity = Vector3.new(0, -3, 0)
-            r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            r.Velocity = Vector3.new(0, 0, 0)
-        end
-    end)
-
-    task.wait(1.2)
-    isInEmergencyDive = false
-    isEmergencyMoving = false
-end
-
 local function startBloaterMonitor()
     if bloaterMonitorConnection then return end
     
@@ -500,7 +430,8 @@ local function startBloaterMonitor()
                     task.wait(5)
                     if isInEmergencyDive then
                         notify("✅ BLOATER AMAN", "Kembali ke posisi Generator...", 3)
-                        returnToGeneratorPosition()
+                        local safePos = generatorPos + Vector3.new(0, -10, 0)
+                        adaptiveCrawlTo(safePos, 0.7)
                     end
                 end)
             end
@@ -508,7 +439,8 @@ local function startBloaterMonitor()
         
         -- Reset jika bloater sudah aman
         if not currentState and isInEmergencyDive then
-            returnToGeneratorPosition()
+            local safePos = generatorPos + Vector3.new(0, -10, 0)
+            adaptiveCrawlTo(safePos, 0.7)
         end
         
         lastBloaterState = currentState
