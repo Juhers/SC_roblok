@@ -397,25 +397,58 @@ local function returnToGeneratorPosition()
     
     isEmergencyMoving = true
     
-    -- Bersihkan semua lock dan noclip sebelum mulai crawl baru
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-        positionLockConnection = nil
-    end
-    
-    StopCrawlNoclip()  -- Pastikan noclip mati dulu
-    
-    task.wait(0.2) -- Sedikit delay untuk stabilisasi
-    
+    notify("🔄 RETURN", "Kembali ke Generator dengan anti-fall...", 3)
+
+    -- JANGAN langsung disconnect lock lama
     local generatorPos = getGeneratorPosition()
-    if generatorPos then
-        local normalPos = generatorPos + Vector3.new(0, -2, 0)
-        adaptiveCrawlTo(normalPos, 1.0)
-    else
-        notify("⚠️ Warning", "Generator tidak ditemukan saat return", 3)
+    if not generatorPos then
+        notify("⚠️ Warning", "Generator tidak ditemukan", 4)
+        isInEmergencyDive = false
+        isEmergencyMoving = false
+        return
     end
+
+    local safeTarget = generatorPos + Vector3.new(0, -2.5, 0)  -- sedikit lebih rendah
+
+    -- Paksa posisi tetap rendah dulu sebelum crawl
+    local root = getRoot()
+    if root then
+        root.CFrame = CFrame.new(root.Position.X, -8, root.Position.Z)  -- paksa turun dulu
+        root.AssemblyLinearVelocity = Vector3.new(0, -10, 0)
+    end
+
+    task.wait(0.3)
+
+    -- Jalankan crawl dengan proteksi lebih kuat
+    adaptiveCrawlTo(safeTarget, 0.85)
+
+    -- Setelah crawl selesai, langsung lock dengan kuat
+    task.wait(0.4)
     
-    task.wait(1.0)
+    local finalRoot = getRoot()
+    if finalRoot then
+        finalRoot.CFrame = CFrame.new(safeTarget)
+        finalRoot.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+        finalRoot.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+
+        -- Lock permanen yang lebih kuat
+        if positionLockConnection then
+            positionLockConnection:Disconnect()
+        end
+
+        positionLockConnection = RunService.Heartbeat:Connect(function()
+            local r = getRoot()
+            if r and r.Parent then
+                local targetY = safeTarget.Y - 0.5
+                r.CFrame = CFrame.new(safeTarget.X, targetY, safeTarget.Z)
+                r.AssemblyLinearVelocity = Vector3.new(0, -6, 0)  -- tetep dorong ke bawah sedikit
+                r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+                r.Velocity = Vector3.new(0, 0, 0)
+            end
+        end)
+    end
+
+    task.wait(1.5)
     isInEmergencyDive = false
     isEmergencyMoving = false
 end
