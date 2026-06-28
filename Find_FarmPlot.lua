@@ -417,7 +417,8 @@ local function startBloaterMonitor()
                     positionLockConnection = nil
                 end
                 
-                local emergencyPos = root.Position + Vector3.new(0, -12, 0)
+                local targetPos = getGeneratorPosition()
+                local emergencyPos = targetPos + Vector3.new(0, -10, 0)
                 adaptiveCrawlTo(emergencyPos, 0.7)
                 
                 -- Tunggu 5 detik di bawah (ini yang kamu minta)
