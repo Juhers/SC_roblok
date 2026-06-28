@@ -257,8 +257,6 @@ local function spamJumpSimple()
     end
 end
 
-RunService.Heartbeat:Connect(spamJumpSimple)
-
 -- ================== FUNGSI DETEKSI ==================
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -587,6 +585,13 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.G then
         toggleLoop()
+    end
+end)
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    if input.KeyCode == Enum.KeyCode.J then
+        spamJumpSimple()
     end
 end)
 
