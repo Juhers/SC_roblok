@@ -397,72 +397,21 @@ local function isBloaterAboutToExplode()
     return false
 end
 
-local lastReturnTime = 0
 local function returnToGeneratorPosition()
-    local currentTime = os.clock()
-    
-    if currentTime - lastReturnTime < 6 then  -- anti-loop
-        return
-    end
-    lastReturnTime = currentTime
-
-    if not isInEmergencyDive or isEmergencyMoving then 
-        return 
-    end
-    
+    if isEmergencyMoving then return end
     isEmergencyMoving = true
+    
     notify("🔄 RETURN", "Kembali ke Generator...", 3)
 
     local generatorPos = getGeneratorPosition()
-    if not generatorPos then
-        notify("⚠️ Warning", "Generator tidak ditemukan", 3)
-        goto cleanup
+    if generatorPos then
+        local targetPos = generatorPos + Vector3.new(0, -2, 0)
+        adaptiveCrawlTo(targetPos, 0.9)
     end
 
-    local targetPos = generatorPos + Vector3.new(0, -2, 0)
-
-    -- Bersihkan state
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-        positionLockConnection = nil
-    end
-    StopCrawlNoclip()
-    isCrawling = false
-
-    -- Stabilkan posisi
-    local root = getRoot()
-    if root then
-        root.CFrame = CFrame.new(root.Position.X, targetPos.Y - 3, root.Position.Z)
-        root.AssemblyLinearVelocity = Vector3.new(0, -6, 0)
-    end
-
-    task.wait(0.3)
-
-    StartCrawlNoclip()
-    adaptiveCrawlTo(targetPos, 0.85)
-
-    task.wait(1.2)
-
-    -- Lock permanen
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-    end
-
-    positionLockConnection = RunService.Heartbeat:Connect(function()
-        local r = getRoot()
-        if r and r.Parent then
-            r.CFrame = CFrame.new(targetPos.X, targetPos.Y - 0.5, targetPos.Z)
-            r.AssemblyLinearVelocity = Vector3.new(0, -2.5, 0)
-            r.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
-            r.Velocity = Vector3.new(0, 0, 0)
-        end
-    end)
-
-    ::cleanup::
-    task.wait(1.0)
+    task.wait(2)
     isInEmergencyDive = false
     isEmergencyMoving = false
-    isCrawling = false
 end
 
 local function startBloaterMonitor()
