@@ -445,8 +445,8 @@ local function startBloaterMonitor()
                 StopCrawlNoclip()
                 
                 local generatorPos = getGeneratorPosition()
-                local safePos = generatorPos and (generatorPos + Vector3.new(0, -20, 0)) 
-                               or (getRoot() and getRoot().Position + Vector3.new(0, -20, 0))
+                local safePos = generatorPos and (generatorPos + Vector3.new(0, -13, 0)) 
+                               or (getRoot() and getRoot().Position + Vector3.new(0, -13, 0))
                 
                 if safePos then
                     adaptiveCrawlTo(safePos, 0.7)
