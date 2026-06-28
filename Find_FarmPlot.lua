@@ -1,6 +1,13 @@
 -- [ Delta Executor ] Deep Underground + Adaptive Crawl Farm Plot + Looping
 -- Toggle Loop: Tekan F
 
+-- Taruh ini di paling atas, bersama deklarasi variabel lain
+local lastReturnTime = 0
+local lastBloaterState = false
+local isInEmergencyDive = false
+local isEmergencyMoving = false
+local isCrawling = false
+
 local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
@@ -394,17 +401,14 @@ local lastReturnTime = 0
 local function returnToGeneratorPosition()
     local currentTime = os.clock()
     
-    -- Anti spam / loop protection
-    if currentTime - lastReturnTime < 8 then  -- minimal 8 detik sekali
+    if currentTime - lastReturnTime < 6 then  -- anti-loop
         return
     end
     lastReturnTime = currentTime
 
-    if not isInEmergencyDive then 
+    if not isInEmergencyDive or isEmergencyMoving then 
         return 
     end
-    
-    if isEmergencyMoving then return end
     
     isEmergencyMoving = true
     notify("🔄 RETURN", "Kembali ke Generator...", 3)
@@ -417,7 +421,7 @@ local function returnToGeneratorPosition()
 
     local targetPos = generatorPos + Vector3.new(0, -2, 0)
 
-    -- Bersihkan semua lock & state
+    -- Bersihkan state
     if positionLockConnection then
         positionLockConnection:Disconnect()
         positionLockConnection = nil
@@ -425,20 +429,19 @@ local function returnToGeneratorPosition()
     StopCrawlNoclip()
     isCrawling = false
 
-    -- Paksa stabil di bawah
+    -- Stabilkan posisi
     local root = getRoot()
     if root then
         root.CFrame = CFrame.new(root.Position.X, targetPos.Y - 3, root.Position.Z)
         root.AssemblyLinearVelocity = Vector3.new(0, -6, 0)
     end
 
-    task.wait(0.4)
+    task.wait(0.3)
 
-    -- Crawl ke posisi
     StartCrawlNoclip()
-    adaptiveCrawlTo(targetPos, 0.9)
+    adaptiveCrawlTo(targetPos, 0.85)
 
-    task.wait(1.0)   -- beri waktu lebih lama
+    task.wait(1.2)
 
     -- Lock permanen
     if positionLockConnection then
@@ -456,7 +459,7 @@ local function returnToGeneratorPosition()
     end)
 
     ::cleanup::
-    task.wait(1.5)
+    task.wait(1.0)
     isInEmergencyDive = false
     isEmergencyMoving = false
     isCrawling = false
@@ -476,32 +479,25 @@ local function startBloaterMonitor()
         -- ================== EMERGENCY DIVE ==================
         if currentState and not lastBloaterState then
             if not isInEmergencyDive and not isEmergencyMoving then
-                
                 isEmergencyMoving = true
                 isInEmergencyDive = true
                 
-                notify("💥 BLOATER DARURAT!", "Menghindar ke posisi aman di bawah Generator...", 3)
+                notify("💥 BLOATER DARURAT!", "Menghindar ke posisi aman...", 3)
                 
-                -- Matikan lock permanen
                 if positionLockConnection then
                     positionLockConnection:Disconnect()
                     positionLockConnection = nil
                 end
                 
                 local generatorPos = getGeneratorPosition()
-                if generatorPos then
-                    local safePos = generatorPos + Vector3.new(0, -10, 0)
-                    adaptiveCrawlTo(safePos, 0.7)
-                else
-                    -- Fallback jika generator tidak ditemukan
-                    local emergencyPos = root.Position + Vector3.new(0, -10, 0)
-                    adaptiveCrawlTo(emergencyPos, 0.7)
-                end
+                local safePos = generatorPos and (generatorPos + Vector3.new(0, -10, 0)) 
+                              or (root.Position + Vector3.new(0, -10, 0))
+                
+                adaptiveCrawlTo(safePos, 0.7)
                 
                 task.spawn(function()
                     task.wait(5)
                     if isInEmergencyDive then
-                        notify("✅ BLOATER AMAN", "Kembali ke posisi Generator...", 3)
                         returnToGeneratorPosition()
                     end
                 end)
