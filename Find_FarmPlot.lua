@@ -246,6 +246,19 @@ local function simulateKeyPress(keyCode)
     notify("⌨️ Simulate", "Tombol T ditekan", 2)
 end
 
+local function spamJumpSimple()
+    local character = player.Character
+    if not character then return end
+    local humanoid = character:FindFirstChild("Humanoid")
+    if humanoid then
+        pcall(function()
+            humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        end)
+    end
+end
+
+RunService.Heartbeat:Connect(spamJumpSimple)
+
 -- ================== FUNGSI DETEKSI ==================
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
