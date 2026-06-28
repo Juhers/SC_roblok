@@ -456,9 +456,8 @@ local function startBloaterMonitor()
                     adaptiveCrawlTo(emergencyPos, 0.7)
                 end
                 
-                -- Auto return setelah 5 detik
                 task.spawn(function()
-                    task.wait(5)
+                    task.wait(7)
                     if isInEmergencyDive then
                         notify("✅ BLOATER AMAN", "Kembali ke posisi Generator...", 3)
                         returnToGeneratorPosition()
