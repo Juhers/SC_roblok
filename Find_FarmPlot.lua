@@ -126,7 +126,7 @@ local function adaptiveCrawlTo(targetPos, speedMultiplier)
     if isCrawling then 
         return 
     end
-    
+
     -- Bersihkan state lama
     if positionLockConnection then
         positionLockConnection:Disconnect()
@@ -489,12 +489,6 @@ local function stopBloaterMonitor()
     end
     
     StopCrawlNoclip()
-    
-    -- Optional: paksa naik sedikit agar tidak stuck di bawah
-    local root = getRoot()
-    if root then
-        root.AssemblyLinearVelocity = Vector3.new(0, 10, 0)
-    end
 end
 
 -- ================== FULL SEQUENCE ==================
