@@ -15,15 +15,6 @@ local playerGui = player:WaitForChild("PlayerGui", 10)
 local isRunning = false
 local isLooping = false
 local loopConnection = nil
-local undergroundConnection = nil
-local originalHip = humanoid.HipHeight
-local undergroundHomeCFrame = nil
-
-local bloaterMonitorConnection = nil   -- ← TAMBAHKAN INI
-local isInEmergencyDive = false
-local emergencyOriginalPos = nil
-local lastBloaterState = false
-local isEmergencyMoving = false
 local isCrawling = false               -- Proteksi crawl
 
 -- ================== NOTIFIKASI ==================
@@ -421,10 +412,6 @@ local function isBloaterAboutToExplode()
 end
 
 -- ================== BACKGROUND BLOATER MONITOR ==================
-local bloaterMonitorConnection = nil
-local isInEmergencyDive = false
-local emergencyOriginalPos = nil
-
 local bloaterMonitorConnection = nil
 local isInEmergencyDive = false
 local emergencyOriginalPos = nil
