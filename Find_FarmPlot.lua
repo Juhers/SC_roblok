@@ -446,7 +446,7 @@ local function startBloaterMonitor()
                
                 -- === TEMPORARY POSITION LOCK SELAMA 5 DETIK ===
                 local startTime = tick()
-                while tick() - startTime < 5 do
+                while tick() - startTime < 10 do
                     if root and root.Parent then
                         root.CFrame = CFrame.new(emergencyPos.X, emergencyPos.Y, emergencyPos.Z)
                     end
