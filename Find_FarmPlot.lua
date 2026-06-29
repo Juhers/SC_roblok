@@ -453,7 +453,7 @@ local function startBloaterMonitor()
                 
                 -- Tunggu 5 detik di bawah (ini yang kamu minta)
                 task.spawn(function()
-                    task.wait(5)
+                    task.wait(10)
                     
                     if isInEmergencyDive and not isBloaterAboutToExplode() then
                         notify("✅ BLOATER AMAN", "Kembali ke posisi semula...", 3)
