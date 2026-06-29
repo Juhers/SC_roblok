@@ -488,83 +488,6 @@ local function stopBloaterMonitor()
     emergencyOriginalPos = nil
 end
 
-local function emergencyStop()
-    -- Matikan semua flag
-    isRunning = false
-    isLooping = false
-    isInEmergencyDive = false
-    
-    -- Disconnect semua connection utama
-    if loopConnection then
-        loopConnection:Disconnect()
-        loopConnection = nil
-    end
-    
-    if bloaterMonitorConnection then
-        bloaterMonitorConnection:Disconnect()
-        bloaterMonitorConnection = nil
-    end
-    
-    stopSpamJump()
-    StopCrawlNoclip()
-    
-    -- Matikan Position Lock dari adaptiveCrawlTo
-    if positionLockConnection then
-        positionLockConnection:Disconnect()
-        positionLockConnection = nil
-    end
-    
-    -- Paksa matikan noclip sepenuhnya
-    pcall(function()
-        local char = player.Character
-        if char then
-            for _, child in ipairs(char:GetDescendants()) do
-                if child:IsA("BasePart") then
-                    child.CanCollide = true
-                    child.Massless = false
-                end
-            end
-        end
-    end)
-    
-    -- Paksa kembali ke posisi aman (naik ke atas)
-    task.spawn(function()
-        notify("⛔ STOP DITEKAN", "Menghentikan semua proses & kembali ke atas...", 4)
-        
-        local targetPos = getGeneratorPosition()
-        local root = getRoot()
-        
-        if targetPos and root then
-            local safePos = targetPos + Vector3.new(0, 5, 0)  -- naik sedikit di atas generator
-            
-            -- Matikan dulu segala lock yang tersisa
-            if positionLockConnection then
-                positionLockConnection:Disconnect()
-                positionLockConnection = nil
-            end
-            
-            -- Gerak ke posisi aman
-            adaptiveCrawlTo(safePos, 1.3)
-            
-        elseif root then
-            -- Fallback jika tidak menemukan generator
-            root.CFrame = root.CFrame + Vector3.new(0, 10, 0)
-            root.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
-            root.Velocity = Vector3.new(0, 0, 0)
-        end
-        
-        task.wait(1.5)
-        
-        -- Final cleanup
-        if positionLockConnection then
-            positionLockConnection:Disconnect()
-            positionLockConnection = nil
-        end
-        
-        notify("✅ SEMUA DIHENTIKAN", "Kembali ke posisi normal\nSemua proses dimatikan", 5)
-    end)
-end
-
 -- ================== FULL SEQUENCE ==================
 local function performFullSequence()
     if isRunning then return end
@@ -655,7 +578,11 @@ local function toggleLoop()
         end)
     else
         stopBloaterMonitor()
-        emergencyStop()
+        if loopConnection then
+            loopConnection:Disconnect()
+            loopConnection = nil
+        end
+        notify("⛔ LOOP DIMATIKAN", "Auto Farm Loop OFF", 5)
     end
 end
 
