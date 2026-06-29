@@ -425,72 +425,68 @@ local bloaterMonitorConnection = nil
 local isInEmergencyDive = false
 local emergencyOriginalPos = nil
 
+local bloaterMonitorConnection = nil
+local isInEmergencyDive = false
+local emergencyOriginalPos = nil
+
 local function startBloaterMonitor()
     if bloaterMonitorConnection then return end
-    
+   
     bloaterMonitorConnection = RunService.Heartbeat:Connect(function()
         if not isRunning then return end
-
+        
         local root = getRoot()
         if not root then return end
 
         if isBloaterAboutToExplode() then
             if not isInEmergencyDive then
                 notify("💥 BLOATER DARURAT!", "Menghindar ke bawah selama 5 detik...", 3)
-                
+               
                 isInEmergencyDive = true
                 emergencyOriginalPos = root.Position
-                
-                -- Matikan lock sementara agar bisa gerak
+               
+                -- Matikan lock normal
                 if positionLockConnection then
                     positionLockConnection:Disconnect()
                     positionLockConnection = nil
                 end
-                
+               
                 local targetPos = getGeneratorPosition()
                 local emergencyPos = targetPos + Vector3.new(0, -10, 0)
+               
+                -- Gerak ke bawah
                 adaptiveCrawlTo(emergencyPos, 0.7)
-                
-                -- Tunggu 5 detik di bawah (ini yang kamu minta)
-                task.spawn(function()
-                    task.wait(5)
-                    
-                    if isInEmergencyDive and not isBloaterAboutToExplode() then
-                        notify("✅ BLOATER AMAN", "Kembali ke posisi semula...", 3)
-                        
-                        if emergencyOriginalPos then
-                            if positionLockConnection then
-                                positionLockConnection:Disconnect()
-                                positionLockConnection = nil
-                            end
-                            -- Generator pertama
-                            local targetPos = getGeneratorPosition()
-                            if targetPos then
-                                local backOffset = targetPos + Vector3.new(0, -2, 0)
-                                adaptiveCrawlTo(backOffset, 1)
-                            end
-                        end
-                        
-                        isInEmergencyDive = false
-                        emergencyOriginalPos = nil
+               
+                -- Tunggu sampai dekat target
+                task.wait(0.5)
+               
+                -- === TEMPORARY POSITION LOCK SELAMA 5 DETIK ===
+                local startTime = tick()
+                while tick() - startTime < 5 do
+                    if root and root.Parent then
+                        root.CFrame = CFrame.new(emergencyPos.X, emergencyPos.Y, emergencyPos.Z)
                     end
-                end)
+                    RunService.Heartbeat:Wait()
+                end
             end
         else
-            -- Jika bloater sudah tidak ada tapi masih dalam mode dive (jarang terjadi)
-            if isInEmergencyDive and emergencyOriginalPos then
-                if positionLockConnection then
-                    positionLockConnection:Disconnect()
-                    positionLockConnection = nil
+            -- === BAGIAN BARU: SAFETY CHECK SEBELUM NAIK ===
+            if isInEmergencyDive then
+                -- Cek apakah sudah benar-benar aman
+                if not isBloaterAboutToExplode() then
+                    notify("✅ Bloater aman, kembali ke posisi normal", "", 2)
+                    
+                    isInEmergencyDive = false
+                    emergencyOriginalPos = nil
+                    
+                    -- Kembali ke posisi normal
+                    local targetPos = getGeneratorPosition()
+                    if targetPos then
+                        local backOffset = targetPos + Vector3.new(0, -2, 0)
+                        adaptiveCrawlTo(backOffset, 1)
+                    end
                 end
-                -- Generator pertama
-                local targetPos = getGeneratorPosition()
-                if targetPos then
-                    local backOffset = targetPos + Vector3.new(0, -2, 0)
-                    adaptiveCrawlTo(backOffset, 1)
-                end
-                isInEmergencyDive = false
-                emergencyOriginalPos = nil
+                -- Jika masih berbahaya, tetap di bawah (tidak naik)
             end
         end
     end)
