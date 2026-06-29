@@ -448,7 +448,7 @@ local function startBloaterMonitor()
                 end
                 
                 local targetPos = getGeneratorPosition()
-                local emergencyPos = targetPos + Vector3.new(0, -6, 0)
+                local emergencyPos = targetPos + Vector3.new(0, -8, 0)
                 adaptiveCrawlTo(emergencyPos, 0.7)
                 
                 -- Tunggu 5 detik di bawah (ini yang kamu minta)
