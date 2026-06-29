@@ -389,7 +389,6 @@ local function isBloaterAboutToExplode()
                         end
                     end
 
-                    --[[
                     if exploding then
                         print(("Exploding ditemukan pada %s | Enabled = %s"):format(
                             npc.Name,
@@ -401,8 +400,6 @@ local function isBloaterAboutToExplode()
                             return true
                         end
                     end
-                    ]]--
-
                 end
             end
         end
